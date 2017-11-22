@@ -18,11 +18,11 @@ public enum ConfigFileFormat {
     return value;
   }
 
-  public static ConfigFileFormat fromString(String value){
-    if (StringUtils.isEmpty(value)){
+  public static ConfigFileFormat fromString(String value) {
+    if (StringUtils.isEmpty(value)) {
       throw new IllegalArgumentException("value can not be empty");
     }
-    switch (value){
+    switch (value) {
       case "properties":
         return Properties;
       case "xml":
@@ -35,5 +35,14 @@ public enum ConfigFileFormat {
         return YAML;
     }
     throw new IllegalArgumentException(value + " can not map enum");
+  }
+
+  public static boolean isValidFormat(String value) {
+    try {
+      fromString(value);
+      return true;
+    } catch (IllegalArgumentException e) {
+      return false;
+    }
   }
 }

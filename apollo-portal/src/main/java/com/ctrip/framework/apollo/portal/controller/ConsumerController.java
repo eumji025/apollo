@@ -20,9 +20,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -65,17 +67,27 @@ public class ConsumerController {
 
   @PreAuthorize(value = "@permissionValidator.isSuperAdmin()")
   @RequestMapping(value = "/consumers/{token}/assign-role", method = RequestMethod.POST)
-  public List<ConsumerRole> assignRoleToConsumer(@PathVariable String token, @RequestBody NamespaceDTO namespace) {
+  public List<ConsumerRole> assignNamespaceRoleToConsumer(@PathVariable String token,
+                                                          @RequestParam String type,
+                                                          @RequestBody NamespaceDTO namespace) {
 
     String appId = namespace.getAppId();
     String namespaceName = namespace.getNamespaceName();
 
-    if (StringUtils.isContainEmpty(appId, namespaceName)) {
-      throw new BadRequestException("Params(AppId、NamespaceName) can not be empty.");
+    if (StringUtils.isEmpty(appId)) {
+      throw new BadRequestException("Params(AppId) can not be empty.");
     }
 
-    return consumerService.assignNamespaceRoleToConsumer(token, appId, namespaceName);
+    if (Objects.equals("AppRole", type)) {
+      return Collections.singletonList(consumerService.assignAppRoleToConsumer(token, appId));
+    } else {
+      if (StringUtils.isEmpty(namespaceName)) {
+        throw new BadRequestException("Params(NamespaceName) can not be empty.");
+      }
+      return consumerService.assignNamespaceRoleToConsumer(token, appId, namespaceName);
+    }
   }
+
 
 
 }

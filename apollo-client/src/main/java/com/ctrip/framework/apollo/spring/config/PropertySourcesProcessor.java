@@ -11,23 +11,28 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.EnvironmentAware;
+import org.springframework.core.Ordered;
+import org.springframework.core.PriorityOrdered;
 import org.springframework.core.env.CompositePropertySource;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.Environment;
 
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Apollo Property Sources processor for Spring Annotation Based Application
+ * Apollo Property Sources processor for Spring Annotation Based Application. <br /> <br />
+ *
+ * The reason why PropertySourcesProcessor implements {@link BeanFactoryPostProcessor} instead of
+ * {@link org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor} is that lower versions of
+ * Spring (e.g. 3.1.1) doesn't support registering BeanDefinitionRegistryPostProcessor in ImportBeanDefinitionRegistrar
+ * - {@link com.ctrip.framework.apollo.spring.annotation.ApolloConfigRegistrar}
  *
  * @author Jason Song(song_s@ctrip.com)
  */
-public class PropertySourcesProcessor implements BeanFactoryPostProcessor, EnvironmentAware {
+public class PropertySourcesProcessor implements BeanFactoryPostProcessor, EnvironmentAware, PriorityOrdered {
   private static final String APOLLO_PROPERTY_SOURCE_NAME = "ApolloPropertySources";
   private static final Multimap<Integer, String> NAMESPACE_NAMES = HashMultimap.create();
-  private static final AtomicBoolean PROPERTY_SOURCES_INITIALIZED = new AtomicBoolean(false);
 
   private ConfigurableEnvironment environment;
 
@@ -37,15 +42,14 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
 
   @Override
   public void postProcessBeanFactory(ConfigurableListableBeanFactory beanFactory) throws BeansException {
-    if (!PROPERTY_SOURCES_INITIALIZED.compareAndSet(false, true)) {
-      //already initialized
-      return;
-    }
-
     initializePropertySources();
   }
 
   protected void initializePropertySources() {
+    if (environment.getPropertySources().contains(APOLLO_PROPERTY_SOURCE_NAME)) {
+      //already initialized
+      return;
+    }
     CompositePropertySource composite = new CompositePropertySource(APOLLO_PROPERTY_SOURCE_NAME);
 
     //sort by order asc
@@ -70,8 +74,13 @@ public class PropertySourcesProcessor implements BeanFactoryPostProcessor, Envir
   }
 
   //only for test
-   private static void reset() {
+  private static void reset() {
     NAMESPACE_NAMES.clear();
-    PROPERTY_SOURCES_INITIALIZED.set(false);
+  }
+
+  @Override
+  public int getOrder() {
+    //make it as early as possible
+    return Ordered.HIGHEST_PRECEDENCE;
   }
 }

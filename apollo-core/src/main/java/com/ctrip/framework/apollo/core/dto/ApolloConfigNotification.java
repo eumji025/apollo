@@ -6,6 +6,7 @@ package com.ctrip.framework.apollo.core.dto;
 public class ApolloConfigNotification {
   private String namespaceName;
   private long notificationId;
+  private volatile ApolloNotificationMessages messages;
 
   //for json converter
   public ApolloConfigNotification() {
@@ -28,8 +29,23 @@ public class ApolloConfigNotification {
     this.namespaceName = namespaceName;
   }
 
-  public void setNotificationId(long notificationId) {
-    this.notificationId = notificationId;
+  public ApolloNotificationMessages getMessages() {
+    return messages;
+  }
+
+  public void setMessages(ApolloNotificationMessages messages) {
+    this.messages = messages;
+  }
+
+  public void addMessage(String key, long notificationId) {
+    if (this.messages == null) {
+      synchronized (this) {
+        if (this.messages == null) {
+          this.messages = new ApolloNotificationMessages();
+        }
+      }
+    }
+    this.messages.put(key, notificationId);
   }
 
   @Override

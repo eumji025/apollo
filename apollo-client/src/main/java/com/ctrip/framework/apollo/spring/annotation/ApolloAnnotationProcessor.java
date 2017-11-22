@@ -1,26 +1,27 @@
 package com.ctrip.framework.apollo.spring.annotation;
 
-import com.google.common.base.Preconditions;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+
+import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.springframework.core.Ordered;
+import org.springframework.core.PriorityOrdered;
+import org.springframework.core.annotation.AnnotationUtils;
+import org.springframework.util.ReflectionUtils;
 
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.ConfigChangeListener;
 import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.model.ConfigChangeEvent;
-
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanPostProcessor;
-import org.springframework.core.annotation.AnnotationUtils;
-import org.springframework.util.ReflectionUtils;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
+import com.google.common.base.Preconditions;
 
 /**
  * Apollo Annotation Processor for Spring Application
  *
  * @author Jason Song(song_s@ctrip.com)
  */
-public class ApolloAnnotationProcessor implements BeanPostProcessor {
+public class ApolloAnnotationProcessor implements BeanPostProcessor, PriorityOrdered {
   @Override
   public Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
     Class clazz = bean.getClass();
@@ -80,4 +81,9 @@ public class ApolloAnnotationProcessor implements BeanPostProcessor {
     }
   }
 
+  @Override
+  public int getOrder() {
+    //make it as late as possible
+    return Ordered.LOWEST_PRECEDENCE;
+  }
 }

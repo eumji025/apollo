@@ -14,7 +14,7 @@ Apollo（阿波罗）是携程框架部门研发的配置管理平台，能够�
 
 服务端基于Spring Boot和Spring Cloud开发，打包后可以直接运行，不需要额外安装Tomcat等应用容器。
 
-Java客户端不依赖任何框架，能够运行于所有Java运行时环境，同时对Spring环境也有较好的支持。
+Java客户端不依赖任何框架，能够运行于所有Java运行时环境，同时对Spring/Spring Boot环境也有较好的支持。
 
 .Net客户端不依赖任何框架，能够运行于所有.Net运行时环境。
 
@@ -49,7 +49,7 @@ Java客户端不依赖任何框架，能够运行于所有Java运行时环境，
 
 * **提供Java和.Net原生客户端**
   * 提供了Java和.Net的原生客户端，方便应用集成
-  * 支持Spring Placeholder和Annotation，方便应用使用（需要Spring 3.1.1+）
+  * 支持Spring Placeholder, Annotation和Spring Boot的ConfigurationProperties，方便应用使用（需要Spring 3.1.1+）
   * 同时提供了Http接口，非Java和.Net应用也可以方便的使用
 
 * **提供开放平台API**
@@ -89,6 +89,10 @@ Java客户端不依赖任何框架，能够运行于所有Java运行时环境，
   * [常见问题回答](https://github.com/ctripcorp/apollo/wiki/FAQ)
   * [部署&开发遇到的常见问题](https://github.com/ctripcorp/apollo/wiki/%E9%83%A8%E7%BD%B2&%E5%BC%80%E5%8F%91%E9%81%87%E5%88%B0%E7%9A%84%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98)
 
+# Presentation
+  * [携程开源配置中心Apollo的设计与实现](http://www.itdks.com/dakalive/detail/3420)
+  * [Slides](http://techshow.ctrip.com/wp-content/uploads/2017/08/%E5%BC%80%E6%BA%90%E9%85%8D%E7%BD%AE%E4%B8%AD%E5%BF%83Apollo%E7%9A%84%E8%AE%BE%E8%AE%A1%E4%B8%8E%E5%AE%9E%E7%8E%B0-%E6%90%BA%E7%A8%8B%E5%AE%8B%E9%A1%BA.pdf)
+
 # Support
 ![tech-support-qq](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/tech-support-qq.png)
 
@@ -98,3 +102,34 @@ Java客户端不依赖任何框架，能够运行于所有Java运行时环境，
 
 # License
 The project is licensed under the [Apache 2 license](https://github.com/ctripcorp/apollo/blob/master/LICENSE).
+
+# Known Users
+
+> 按照登记顺序排序，更多接入公司，欢迎在[https://github.com/ctripcorp/apollo/issues/451](https://github.com/ctripcorp/apollo/issues/451)登记
+
+![携程](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/ctrip.png) 
+![青石证券](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/bluestone.png) 
+![沙绿](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/sagreen.png) 
+![航旅纵横](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/umetrip.jpg) 
+![58转转](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/zhuanzhuan.png) 
+![蜂助手](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/phone580.png) 
+![海南航空](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/hainan-airlines.png) 
+![CVTE](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/cvte.png) 
+![明博教育](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/mainbo.jpg) 
+![麻袋理财](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/madailicai.png) 
+![美行科技](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/mxnavi.jpg) 
+![首展科技](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/fshows.jpg) 
+![易微行](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/feezu.png) 
+![人才加](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/rencaijia.png) 
+![凯京集团](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/keking.png) 
+![乐刻运动](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/leoao.png) 
+![大疆](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/dji.png) 
+![快看漫画](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/kkmh.png) 
+![我来贷](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/wolaidai.png) 
+![虚实软件](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/xsrj.png) 
+![网易严选](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/yanxuan.png) 
+![视觉中国](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/sjzg.png) 
+![资产360](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/zc360.png) 
+![亿咖通](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/ecarx.png) 
+![5173](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/5173.png) 
+![沪江](https://github.com/ctripcorp/apollo/blob/master/doc/images/known-users/hujiang.png) 

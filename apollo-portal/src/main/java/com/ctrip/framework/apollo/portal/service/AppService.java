@@ -8,7 +8,7 @@ import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.common.utils.BeanUtils;
 import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.bo.UserInfo;
 import com.ctrip.framework.apollo.portal.entity.vo.EnvClusterInfo;
 import com.ctrip.framework.apollo.portal.repository.AppRepository;
@@ -61,11 +61,7 @@ public class AppService {
   }
 
   public App load(String appId) {
-    App app = appRepository.findByAppId(appId);
-    if (app == null) {
-      throw new BadRequestException(String.format("app %s cant found.", appId));
-    }
-    return app;
+    return appRepository.findByAppId(appId);
   }
 
   public AppDTO load(Env env, String appId) {
@@ -105,7 +101,7 @@ public class AppService {
     appNamespaceService.createDefaultAppNamespace(appId);
     roleInitializationService.initAppRoles(createdApp);
 
-    Tracer.logEvent(CatEventType.CREATE_APP, appId);
+    Tracer.logEvent(TracerEventType.CREATE_APP, appId);
 
     return createdApp;
   }

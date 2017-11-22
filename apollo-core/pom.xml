@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.framework.apollo</groupId>
 		<artifactId>apollo</artifactId>
-		<version>0.6.0</version>
+		<version>0.9.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
@@ -16,12 +16,6 @@
 		<github.path>${project.artifactId}</github.path>
 	</properties>
 	<dependencies>
-		<!-- framework foundation -->
-		<dependency>
-			<groupId>com.ctrip.framework</groupId>
-			<artifactId>framework-foundation</artifactId>
-		</dependency>
-		<!-- end of framework foundation -->
 		<!-- json -->
 		<dependency>
 			<groupId>com.google.code.gson</groupId>

@@ -7,7 +7,9 @@ function OpenManageController($scope, toastr, AppUtil, OrganizationService, Cons
     var $orgWidget = $('#organization');
 
     $scope.consumer = {};
-    $scope.consumerRole = {};
+    $scope.consumerRole = {
+        type: 'NamespaceRole'
+    };
 
     $scope.submitBtnDisabled = false;
     $scope.userSelectWidgetId = 'toAssignMasterRoleUser';
@@ -110,6 +112,7 @@ function OpenManageController($scope, toastr, AppUtil, OrganizationService, Cons
 
     function assignRoleToConsumer() {
         ConsumerService.assignRoleToConsumer($scope.consumerRole.token,
+                                             $scope.consumerRole.type,
                                              $scope.consumerRole.appId,
                                              $scope.consumerRole.namespaceName)
             .then(function (consumerRoles) {
@@ -118,4 +121,5 @@ function OpenManageController($scope, toastr, AppUtil, OrganizationService, Cons
                 AppUtil.showErrorMsg(response, "赋权失败");
             })
     }
+    
 }

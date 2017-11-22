@@ -1,7 +1,11 @@
 package com.ctrip.framework.apollo.spi;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.ConfigFile;
+import com.ctrip.framework.apollo.build.ApolloInjector;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.internals.ConfigRepository;
 import com.ctrip.framework.apollo.internals.DefaultConfig;
@@ -14,19 +18,16 @@ import com.ctrip.framework.apollo.internals.YamlConfigFile;
 import com.ctrip.framework.apollo.internals.YmlConfigFile;
 import com.ctrip.framework.apollo.util.ConfigUtil;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.unidal.lookup.annotation.Inject;
-import org.unidal.lookup.annotation.Named;
-
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
-@Named(type = ConfigFactory.class)
 public class DefaultConfigFactory implements ConfigFactory {
   private static final Logger logger = LoggerFactory.getLogger(DefaultConfigFactory.class);
-  @Inject
   private ConfigUtil m_configUtil;
+
+  public DefaultConfigFactory() {
+    m_configUtil = ApolloInjector.getInstance(ConfigUtil.class);
+  }
 
   @Override
   public Config create(String namespace) {

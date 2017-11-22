@@ -21,6 +21,7 @@ import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.configservice.service.ReleaseMessageServiceWithCache;
 import com.ctrip.framework.apollo.configservice.util.NamespaceUtil;
 import com.ctrip.framework.apollo.configservice.util.WatchKeysUtil;
+import com.ctrip.framework.apollo.configservice.wrapper.DeferredResultWrapper;
 import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.dto.ApolloConfigNotification;
 import com.ctrip.framework.apollo.core.utils.ApolloThreadFactory;
@@ -29,7 +30,6 @@ import com.ctrip.framework.apollo.tracer.Tracer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.CollectionUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -42,6 +42,7 @@ import java.lang.reflect.Type;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -54,14 +55,10 @@ import java.util.concurrent.TimeUnit;
 @RequestMapping("/notifications/v2")
 public class NotificationControllerV2 implements ReleaseMessageListener {
   private static final Logger logger = LoggerFactory.getLogger(NotificationControllerV2.class);
-  private static final long TIMEOUT = 30 * 1000;//30 seconds
-  private final Multimap<String, DeferredResult<ResponseEntity<List<ApolloConfigNotification>>>>
-      deferredResults = Multimaps.synchronizedSetMultimap(HashMultimap.create());
-  private static final ResponseEntity<List<ApolloConfigNotification>>
-      NOT_MODIFIED_RESPONSE_LIST = new ResponseEntity<>(HttpStatus.NOT_MODIFIED);
+  private final Multimap<String, DeferredResultWrapper> deferredResults =
+      Multimaps.synchronizedSetMultimap(HashMultimap.create());
   private static final Splitter STRING_SPLITTER =
       Splitter.on(ConfigConsts.CLUSTER_NAMESPACE_SEPARATOR).omitEmptyStrings();
-  private static final long NOTIFICATION_ID_PLACEHOLDER = -1;
   private static final Type notificationsTypeReference =
       new TypeToken<List<ApolloConfigNotification>>() {
       }.getType();
@@ -111,16 +108,19 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
       throw new BadRequestException("Invalid format of notifications: " + notificationsAsString);
     }
 
+    DeferredResultWrapper deferredResultWrapper = new DeferredResultWrapper();
     Set<String> namespaces = Sets.newHashSet();
     Map<String, Long> clientSideNotifications = Maps.newHashMap();
-    for (ApolloConfigNotification notification : notifications) {
-      if (Strings.isNullOrEmpty(notification.getNamespaceName())) {
-        continue;
+    Map<String, ApolloConfigNotification> filteredNotifications = filterNotifications(appId, notifications);
+
+    for (Map.Entry<String, ApolloConfigNotification> notificationEntry : filteredNotifications.entrySet()) {
+      String normalizedNamespace = notificationEntry.getKey();
+      ApolloConfigNotification notification = notificationEntry.getValue();
+      namespaces.add(normalizedNamespace);
+      clientSideNotifications.put(normalizedNamespace, notification.getNotificationId());
+      if (!Objects.equals(notification.getNamespaceName(), normalizedNamespace)) {
+        deferredResultWrapper.recordNamespaceNameNormalizedResult(notification.getNamespaceName(), normalizedNamespace);
       }
-      //strip out .properties suffix
-      String namespace = namespaceUtil.filterNamespaceName(notification.getNamespaceName());
-      namespaces.add(namespace);
-      clientSideNotifications.put(namespace, notification.getNotificationId());
     }
 
     if (CollectionUtils.isEmpty(namespaces)) {
@@ -129,9 +129,6 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
 
     Multimap<String, String> watchedKeysMap =
         watchKeysUtil.assembleAllWatchKeys(appId, cluster, namespaces, dataCenter);
-
-    DeferredResult<ResponseEntity<List<ApolloConfigNotification>>> deferredResult =
-        new DeferredResult<>(TIMEOUT, NOT_MODIFIED_RESPONSE_LIST);
 
     Set<String> watchedKeys = Sets.newHashSet(watchedKeysMap.values());
 
@@ -151,30 +148,56 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
             latestReleaseMessages);
 
     if (!CollectionUtils.isEmpty(newNotifications)) {
-      deferredResult.setResult(new ResponseEntity<>(newNotifications, HttpStatus.OK));
+      deferredResultWrapper.setResult(newNotifications);
     } else {
-      //register all keys
-      for (String key : watchedKeys) {
-        this.deferredResults.put(key, deferredResult);
-      }
+      deferredResultWrapper
+          .onTimeout(() -> logWatchedKeys(watchedKeys, "Apollo.LongPoll.TimeOutKeys"));
 
-      deferredResult
-          .onTimeout(() -> logWatchedKeysToCat(watchedKeys, "Apollo.LongPoll.TimeOutKeys"));
-
-      deferredResult.onCompletion(() -> {
+      deferredResultWrapper.onCompletion(() -> {
         //unregister all keys
         for (String key : watchedKeys) {
-          deferredResults.remove(key, deferredResult);
+          deferredResults.remove(key, deferredResultWrapper);
         }
-        logWatchedKeysToCat(watchedKeys, "Apollo.LongPoll.CompletedKeys");
+        logWatchedKeys(watchedKeys, "Apollo.LongPoll.CompletedKeys");
       });
 
-      logWatchedKeysToCat(watchedKeys, "Apollo.LongPoll.RegisteredKeys");
+      //register all keys
+      for (String key : watchedKeys) {
+        this.deferredResults.put(key, deferredResultWrapper);
+      }
+
+      logWatchedKeys(watchedKeys, "Apollo.LongPoll.RegisteredKeys");
       logger.debug("Listening {} from appId: {}, cluster: {}, namespace: {}, datacenter: {}",
           watchedKeys, appId, cluster, namespaces, dataCenter);
     }
 
-    return deferredResult;
+    return deferredResultWrapper.getResult();
+  }
+
+  private Map<String, ApolloConfigNotification> filterNotifications(String appId,
+                                                                    List<ApolloConfigNotification> notifications) {
+    Map<String, ApolloConfigNotification> filteredNotifications = Maps.newHashMap();
+    for (ApolloConfigNotification notification : notifications) {
+      if (Strings.isNullOrEmpty(notification.getNamespaceName())) {
+        continue;
+      }
+      //strip out .properties suffix
+      String originalNamespace = namespaceUtil.filterNamespaceName(notification.getNamespaceName());
+      notification.setNamespaceName(originalNamespace);
+      //fix the character case issue, such as FX.apollo <-> fx.apollo
+      String normalizedNamespace = namespaceUtil.normalizeNamespace(appId, originalNamespace);
+
+      // in case client side namespace name has character case issue and has difference notification ids
+      // such as FX.apollo = 1 but fx.apollo = 2, we should let FX.apollo have the chance to update its notification id
+      // which means we should record FX.apollo = 1 here and ignore fx.apollo = 2
+      if (filteredNotifications.containsKey(normalizedNamespace) &&
+          filteredNotifications.get(normalizedNamespace).getNotificationId() < notification.getNotificationId()) {
+        continue;
+      }
+
+      filteredNotifications.put(normalizedNamespace, notification);
+    }
+    return filteredNotifications;
   }
 
   private List<ApolloConfigNotification> getApolloConfigNotifications(Set<String> namespaces,
@@ -190,17 +213,20 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
 
       for (String namespace : namespaces) {
         long clientSideId = clientSideNotifications.get(namespace);
-        long latestId = NOTIFICATION_ID_PLACEHOLDER;
+        long latestId = ConfigConsts.NOTIFICATION_ID_PLACEHOLDER;
         Collection<String> namespaceWatchedKeys = watchedKeysMap.get(namespace);
         for (String namespaceWatchedKey : namespaceWatchedKeys) {
           long namespaceNotificationId =
-              latestNotifications.getOrDefault(namespaceWatchedKey, NOTIFICATION_ID_PLACEHOLDER);
+              latestNotifications.getOrDefault(namespaceWatchedKey, ConfigConsts.NOTIFICATION_ID_PLACEHOLDER);
           if (namespaceNotificationId > latestId) {
             latestId = namespaceNotificationId;
           }
         }
         if (latestId > clientSideId) {
-          newNotifications.add(new ApolloConfigNotification(namespace, latestId));
+          ApolloConfigNotification notification = new ApolloConfigNotification(namespace, latestId);
+          namespaceWatchedKeys.stream().filter(latestNotifications::containsKey).forEach(namespaceWatchedKey ->
+              notification.addMessage(namespaceWatchedKey, latestNotifications.get(namespaceWatchedKey)));
+          newNotifications.add(notification);
         }
       }
     }
@@ -224,17 +250,15 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
       return;
     }
 
-    ResponseEntity<List<ApolloConfigNotification>> notification =
-        new ResponseEntity<>(
-            Lists.newArrayList(new ApolloConfigNotification(changedNamespace, message.getId())),
-            HttpStatus.OK);
-
     if (!deferredResults.containsKey(content)) {
       return;
     }
+
     //create a new list to avoid ConcurrentModificationException
-    List<DeferredResult<ResponseEntity<List<ApolloConfigNotification>>>> results =
-        Lists.newArrayList(deferredResults.get(content));
+    List<DeferredResultWrapper> results = Lists.newArrayList(deferredResults.get(content));
+
+    ApolloConfigNotification configNotification = new ApolloConfigNotification(changedNamespace, message.getId());
+    configNotification.addMessage(content, message.getId());
 
     //do async notification if too many clients
     if (results.size() > bizConfig.releaseMessageNotificationBatch()) {
@@ -250,7 +274,7 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
             }
           }
           logger.debug("Async notify {}", results.get(i));
-          results.get(i).setResult(notification);
+          results.get(i).setResult(configNotification);
         }
       });
       return;
@@ -258,8 +282,8 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
 
     logger.debug("Notify {} clients for key {}", results.size(), content);
 
-    for (DeferredResult<ResponseEntity<List<ApolloConfigNotification>>> result : results) {
-      result.setResult(notification);
+    for (DeferredResultWrapper result : results) {
+      result.setResult(configNotification);
     }
     logger.debug("Notification completed");
   }
@@ -278,7 +302,7 @@ public class NotificationControllerV2 implements ReleaseMessageListener {
         return keys.get(2);
       };
 
-  private void logWatchedKeysToCat(Set<String> watchedKeys, String eventName) {
+  private void logWatchedKeys(Set<String> watchedKeys, String eventName) {
     for (String watchedKey : watchedKeys) {
       Tracer.logEvent(eventName, watchedKey);
     }

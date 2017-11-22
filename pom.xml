@@ -2,15 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 	<modelVersion>4.0.0</modelVersion>
-	<parent>
-		<groupId>com.ctrip.framework</groupId>
-		<artifactId>framework-parent</artifactId>
-		<version>1.3.0</version>
-	</parent>
 
 	<groupId>com.ctrip.framework.apollo</groupId>
 	<artifactId>apollo</artifactId>
-	<version>0.6.0</version>
+	<version>0.9.1-SNAPSHOT</version>
 	<name>Apollo</name>
 	<packaging>pom</packaging>
 	<description>Ctrip Configuration Center</description>
@@ -78,10 +73,19 @@
 	</developers>
 
 	<properties>
-		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<java.version>1.8</java.version>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 		<spring-boot.version>1.3.8.RELEASE</spring-boot.version>
 		<spring-cloud.version>1.2.3.RELEASE</spring-cloud.version>
+		<!-- Plugins Version -->
+		<maven-compiler-plugin.version>3.6.0</maven-compiler-plugin.version>
+		<maven-surefire-plugin.version>2.19.1</maven-surefire-plugin.version>
+		<maven-source-plugin.version>3.0.1</maven-source-plugin.version>
+		<maven-jar-plugin.version>3.0.2</maven-jar-plugin.version>
+		<maven-war-plugin.version>3.0.0</maven-war-plugin.version>
+		<maven-install-plugin.version>2.5.2</maven-install-plugin.version>
+		<maven-deploy-plugin.version>2.8.2</maven-deploy-plugin.version>
+		<!-- for travis usage -->
 		<github.global.server>github</github.global.server>
 		<github.global.oauth2Token>${env.LOCALAPPDATA}</github.global.oauth2Token>
 	</properties>
@@ -136,11 +140,7 @@
 				<artifactId>apollo-portal</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>com.ctrip.framework</groupId>
-				<artifactId>framework-foundation</artifactId>
-				<version>1.5.0</version>
-			</dependency>
+			<!-- ctrip internal dependencies, only used when ctrip profiles are enabled -->
 			<dependency>
 				<groupId>com.dianping.cat</groupId>
 				<artifactId>cat-client</artifactId>
@@ -179,12 +179,6 @@
 						<artifactId>persistence-api</artifactId>
 					</exclusion>
 				</exclusions>
-			</dependency>
-			<!-- used by ctrip dal -->
-			<dependency>
-				<groupId>com.alibaba</groupId>
-				<artifactId>fastjson</artifactId>
-				<version>1.2.7</version>
 			</dependency>
 			<dependency>
 				<groupId>com.ctrip.framework.clogging</groupId>
@@ -249,9 +243,29 @@
 			</dependency>
 			<!--third party -->
 			<dependency>
+				<groupId>org.slf4j</groupId>
+				<artifactId>slf4j-api</artifactId>
+				<version>1.7.21</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.guava</groupId>
+				<artifactId>guava</artifactId>
+				<version>19.0</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.code.gson</groupId>
+				<artifactId>gson</artifactId>
+				<version>2.8.0</version>
+			</dependency>
+			<dependency>
 				<groupId>mysql</groupId>
 				<artifactId>mysql-connector-java</artifactId>
 				<version>5.1.39</version>
+			</dependency>
+			<dependency>
+				<groupId>com.google.inject</groupId>
+				<artifactId>guice</artifactId>
+				<version>4.1.0</version>
 			</dependency>
 			<!--for test -->
 			<dependency>
@@ -301,6 +315,62 @@
 	<build>
 		<pluginManagement>
 			<plugins>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-compiler-plugin</artifactId>
+					<version>${maven-compiler-plugin.version}</version>
+					<configuration>
+						<source>${java.version}</source>
+						<target>${java.version}</target>
+						<encoding>${project.build.sourceEncoding}</encoding>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-surefire-plugin</artifactId>
+					<version>${maven-surefire-plugin.version}</version>
+					<configuration>
+						<includes>
+							<include>**/AllTests.java</include>
+						</includes>
+					</configuration>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-source-plugin</artifactId>
+					<version>${maven-source-plugin.version}</version>
+					<executions>
+						<execution>
+							<id>attach-sources</id>
+							<goals>
+								<goal>jar-no-fork</goal>
+							</goals>
+						</execution>
+					</executions>
+				</plugin>
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-jar-plugin</artifactId>
+					<version>${maven-jar-plugin.version}</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-war-plugin</artifactId>
+					<version>${maven-war-plugin.version}</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-install-plugin</artifactId>
+					<version>${maven-install-plugin.version}</version>
+				</plugin>
+
+				<plugin>
+					<groupId>org.apache.maven.plugins</groupId>
+					<artifactId>maven-deploy-plugin</artifactId>
+					<version>${maven-deploy-plugin.version}</version>
+				</plugin>
 				<plugin>
 					<groupId>org.springframework.boot</groupId>
 					<artifactId>spring-boot-maven-plugin</artifactId>
@@ -373,6 +443,30 @@
 			</plugins>
 		</pluginManagement>
 		<plugins>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-compiler-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-war-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-install-plugin</artifactId>
+			</plugin>
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-deploy-plugin</artifactId>
+			</plugin>
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-checkstyle-plugin</artifactId>
@@ -489,34 +583,22 @@
 					</plugin>
 				</plugins>
 			</build>
-			<repositories>
-				<repository>
-					<id>internal.repo</id>
-					<url>https://raw.github.com/ctripcorp/apollo/mvn-repo/</url>
-				</repository>
-			</repositories>
 		</profile>
 		<profile>
 			<!-- for open source usage -->
-			<id>dev</id>
+			<id>github</id>
 			<properties>
-				<package.environment>dev</package.environment>
+				<package.environment>github</package.environment>
 			</properties>
 			<activation>
 				<activeByDefault>true</activeByDefault>
 			</activation>
-			<repositories>
-				<repository>
-					<id>internal.repo</id>
-					<url>https://raw.github.com/ctripcorp/apollo/mvn-repo/</url>
-				</repository>
-			</repositories>
 		</profile>
 		<profile>
-            <!-- for ctrip development -->
+      <!-- for ctrip development -->
 			<id>ctrip-dev</id>
 			<properties>
-				<package.environment>dev</package.environment>
+				<package.environment>ctrip</package.environment>
 			</properties>
 			<dependencyManagement>
 				<dependencies>
@@ -587,6 +669,11 @@
 								<groupId>commons-beanutils</groupId>
 								<artifactId>commons-beanutils-core</artifactId>
 							</exclusion>
+							<!-- duplicated with spring-aop -->
+							<exclusion>
+								<groupId>aopalliance</groupId>
+								<artifactId>aopalliance</artifactId>
+							</exclusion>
 						</exclusions>
 					</dependency>
 					<!-- end of eureka -->
@@ -616,6 +703,9 @@
 		<profile>
 			<!-- for ctrip production -->
 			<id>ctrip</id>
+			<properties>
+				<package.environment>ctrip</package.environment>
+			</properties>
 			<dependencyManagement>
 				<dependencies>
 					<dependency>
@@ -684,6 +774,11 @@
 							<exclusion>
 								<groupId>commons-beanutils</groupId>
 								<artifactId>commons-beanutils-core</artifactId>
+							</exclusion>
+							<!-- duplicated with spring-aop -->
+							<exclusion>
+								<groupId>aopalliance</groupId>
+								<artifactId>aopalliance</artifactId>
 							</exclusion>
 						</exclusions>
 					</dependency>
@@ -764,5 +859,15 @@
 			</plugin>
 		</plugins>
 	</reporting>
+	<distributionManagement>
+		<repository>
+			<id>releases</id>
+			<url>${releases.repo}</url>
+		</repository>
+		<snapshotRepository>
+			<id>snapshots</id>
+			<url>${snapshots.repo}</url>
+		</snapshotRepository>
+	</distributionManagement>
 </project>
 

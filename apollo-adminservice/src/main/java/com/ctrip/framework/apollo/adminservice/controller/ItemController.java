@@ -129,7 +129,7 @@ public class ItemController {
   public List<ItemDTO> findItems(@PathVariable("appId") String appId,
                                  @PathVariable("clusterName") String clusterName,
                                  @PathVariable("namespaceName") String namespaceName) {
-    return BeanUtils.batchTransform(ItemDTO.class, itemService.findItems(appId, clusterName, namespaceName));
+    return BeanUtils.batchTransform(ItemDTO.class, itemService.findItemsWithOrdered(appId, clusterName, namespaceName));
   }
 
   @RequestMapping(value = "/items/{itemId}", method = RequestMethod.GET)

@@ -2,6 +2,7 @@ package com.ctrip.framework.apollo.portal.util;
 
 import org.apache.commons.lang.time.FastDateFormat;
 
+import java.util.Calendar;
 import java.util.Date;
 
 
@@ -35,8 +36,14 @@ public class RelativeDateFormat {
       long hours = toHours(delta);
       return (hours <= 0 ? 1 : hours) + ONE_HOUR_AGO;
     }
-    if (delta < 48L * ONE_HOUR) {
+
+    Date lastDayBeginTime = getDateOffset(-1);
+    if (date.after(lastDayBeginTime)) {
       return "昨天";
+    }
+    Date lastTwoDaysBeginTime = getDateOffset(-2);
+    if (date.after(lastTwoDaysBeginTime)) {
+      return "前天";
     }
     if (delta < 30L * ONE_DAY) {
       long days = toDays(delta);
@@ -69,6 +76,24 @@ public class RelativeDateFormat {
 
   private static long toMonths(long date) {
     return toDays(date) / 30L;
+  }
+
+  public static Date getDateOffset(int offset) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTime(new Date());
+    calendar.add(calendar.DATE, offset);
+
+    return getDayBeginTime(calendar.getTime());
+  }
+
+  private static Date getDayBeginTime(Date date) {
+    Calendar calendar = Calendar.getInstance();
+    calendar.setTime(date);
+    calendar.set(Calendar.HOUR, 0);
+    calendar.set(Calendar.MINUTE, 0);
+    calendar.set(Calendar.SECOND, 0);
+    calendar.set(Calendar.MILLISECOND, 0);
+    return new Date(calendar.getTime().getTime());
   }
 
 }

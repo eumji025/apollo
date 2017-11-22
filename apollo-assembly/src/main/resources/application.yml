@@ -3,9 +3,4 @@ spring:
     active: ${apollo_profile}
 
 logging:
-  level:
-    org.springframework.cloud: 'DEBUG'
   file: /opt/logs/100003171/apollo-assembly.log
-
-
-

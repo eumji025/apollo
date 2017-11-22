@@ -4,7 +4,7 @@
 	<parent>
 		<artifactId>apollo</artifactId>
 		<groupId>com.ctrip.framework.apollo</groupId>
-		<version>0.6.0</version>
+		<version>0.9.1-SNAPSHOT</version>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>apollo-demo</artifactId>
@@ -13,8 +13,7 @@
 	<properties>
 		<java.version>1.7</java.version>
 		<github.path>${project.artifactId}</github.path>
-        <!-- apollo spring integration requires Spring 3.1.1+ -->
-		<spring-demo.version>3.1.1.RELEASE</spring-demo.version>
+		<spring-demo.version>4.3.6.RELEASE</spring-demo.version>
 	</properties>
 	<dependencyManagement>
 		<dependencies>
@@ -71,6 +70,26 @@
 		<dependency>
 			<groupId>org.springframework</groupId>
 			<artifactId>spring-context</artifactId>
+		</dependency>
+		<!-- for spring boot demo -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter</artifactId>
+			<exclusions>
+				<exclusion>
+					<groupId>org.springframework.boot</groupId>
+					<artifactId>spring-boot-starter-logging</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+        <!-- for refresh scope demo -->
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-context</artifactId>
 		</dependency>
         <!-- required for spring 3.1.0 -->
 		<dependency>

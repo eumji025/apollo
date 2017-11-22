@@ -6,7 +6,9 @@
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span
                         aria-hidden="true">&times;</span></button>
                 <h4 class="modal-title">
-                    <span ng-show="item.tableViewOperType == 'create' && !toOperationNamespace.isBranch"> 添加配置项</span>
+                    <span ng-show="item.tableViewOperType == 'create' && !toOperationNamespace.isBranch">
+                        添加配置项 <small class="text-info">(温馨提示: 可以通过文本模式批量添加配置)</small>
+                    </span>
                     <span ng-show="item.tableViewOperType == 'create' && toOperationNamespace.isBranch"> 添加灰度配置项</span>
                     <span ng-show="item.tableViewOperType == 'update'"> 修改配置项</span>
                 </h4>
@@ -33,7 +35,13 @@
                                   ng-required="true"
                                   ng-model="item.value">
                             </textarea>
+                        注意: 隐藏字符(空格、换行符、制表符Tab)容易导致配置出错，如果需要检测Value中隐藏字符请点击 <a ng-click="showHiddenChars()">检测隐藏字符</a>
+                        <br>
+                        <div class="bg-info" ng-show="showHiddenCharsContext && hiddenCharCounter == 0">无隐藏字符</div>
+                        <div class="bg-info" ng-bind-html="valueWithHiddenChars" ng-show="showHiddenCharsContext && hiddenCharCounter > 0"></div>
                     </div>
+
+
                 </div>
                 <div class="form-group">
                     <label class="col-sm-2 control-label">Comment</label>

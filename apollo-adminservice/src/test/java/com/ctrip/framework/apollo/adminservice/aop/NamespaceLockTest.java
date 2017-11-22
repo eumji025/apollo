@@ -42,7 +42,7 @@ public class NamespaceLockTest {
   @Mock
   private BizConfig bizConfig;
   @InjectMocks
-  NamespaceLockAspect namespaceLockAspect;
+  NamespaceAcquireLockAspect namespaceLockAspect;
 
   @Test
   public void acquireLockWithNotLockedAndSwitchON() {

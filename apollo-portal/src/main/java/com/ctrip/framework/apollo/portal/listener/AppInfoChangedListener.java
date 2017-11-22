@@ -36,7 +36,7 @@ public class AppInfoChangedListener {
         appAPI.updateApp(env, appDTO);
       } catch (Throwable e) {
         logger.error("Update app's info failed. Env = {}, AppId = {}", env, appId, e);
-        Tracer.logError(String.format("Update app's info failed. Env = {}, AppId = {}", env, appId), e);
+        Tracer.logError(String.format("Update app's info failed. Env = %s, AppId = %s", env, appId), e);
       }
     }
 

@@ -5,10 +5,12 @@ import com.google.common.base.Charsets;
 import com.ctrip.framework.apollo.Config;
 import com.ctrip.framework.apollo.ConfigChangeListener;
 import com.ctrip.framework.apollo.ConfigFile;
+import com.ctrip.framework.apollo.ConfigFileChangeListener;
 import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.model.ConfigChange;
 import com.ctrip.framework.apollo.model.ConfigChangeEvent;
+import com.ctrip.framework.apollo.model.ConfigFileChangeEvent;
 import com.ctrip.framework.foundation.Foundation;
 
 import org.slf4j.Logger;
@@ -48,6 +50,12 @@ public class ApolloConfigDemo {
     publicConfig.addChangeListener(changeListener);
     applicationConfigFile = ConfigService.getConfigFile("application", ConfigFileFormat.Properties);
     xmlConfigFile = ConfigService.getConfigFile("datasources", ConfigFileFormat.XML);
+    xmlConfigFile.addChangeListener(new ConfigFileChangeListener() {
+      @Override
+      public void onChange(ConfigFileChangeEvent changeEvent) {
+        logger.info(changeEvent.toString());
+      }
+    });
   }
 
   private String getConfig(String key) {

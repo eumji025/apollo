@@ -63,7 +63,7 @@ public class NamespaceServiceIntegrationTest extends AbstractIntegrationTest {
 
     namespaceService.deleteNamespace(namespace, testUser);
 
-    List<Item> items = itemService.findItems(testApp, testCluster, testPrivateNamespace);
+    List<Item> items = itemService.findItemsWithoutOrdered(testApp, testCluster, testPrivateNamespace);
     List<Commit> commits = commitService.find(testApp, testCluster, testPrivateNamespace, new PageRequest(0, 10));
     AppNamespace appNamespace = appNamespaceService.findOne(testApp, testPrivateNamespace);
     List<Cluster> childClusters = clusterService.findChildClusters(testApp, testCluster);

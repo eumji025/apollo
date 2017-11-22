@@ -32,7 +32,6 @@ import javax.annotation.PostConstruct;
 @Component
 public class AdminServiceAddressLocator {
 
-  private static final int DEFAULT_TIMEOUT_MS = 1000;
   private static final long NORMAL_REFRESH_INTERVAL = 5 * 60 * 1000;
   private static final long OFFLINE_REFRESH_INTERVAL = 10 * 1000;
   private static final int RETRY_TIMES = 3;
@@ -48,27 +47,18 @@ public class AdminServiceAddressLocator {
   private HttpMessageConverters httpMessageConverters;
   @Autowired
   private PortalSettings portalSettings;
+  @Autowired
+  private RestTemplateFactory restTemplateFactory;
 
   @PostConstruct
   public void init() {
     allEnvs = portalSettings.getAllEnvs();
 
     //init restTemplate
-    restTemplate = new RestTemplate(httpMessageConverters.getConverters());
-    if (restTemplate.getRequestFactory() instanceof SimpleClientHttpRequestFactory) {
-      SimpleClientHttpRequestFactory rf =
-          (SimpleClientHttpRequestFactory) restTemplate.getRequestFactory();
-      rf.setReadTimeout(DEFAULT_TIMEOUT_MS);
-      rf.setConnectTimeout(DEFAULT_TIMEOUT_MS);
-    } else if (restTemplate.getRequestFactory() instanceof HttpComponentsClientHttpRequestFactory) {
-      HttpComponentsClientHttpRequestFactory rf =
-          (HttpComponentsClientHttpRequestFactory) restTemplate.getRequestFactory();
-      rf.setReadTimeout(DEFAULT_TIMEOUT_MS);
-      rf.setConnectTimeout(DEFAULT_TIMEOUT_MS);
-    }
+    restTemplate = restTemplateFactory.getObject();
 
     refreshServiceAddressService =
-        Executors.newScheduledThreadPool(1, ApolloThreadFactory.create("ServiceLocator", false));
+        Executors.newScheduledThreadPool(1, ApolloThreadFactory.create("ServiceLocator", true));
 
     refreshServiceAddressService.schedule(new RefreshAdminServerAddressTask(), 1, TimeUnit.MILLISECONDS);
   }

@@ -33,7 +33,7 @@ public class WebContextConfiguration {
       @Override
       public void onStartup(ServletContext servletContext) throws ServletException {
         String loggingServerIP = portalConfig.cloggingUrl();
-        String loggingServerPort = portalConfig.cloggingUrl();
+        String loggingServerPort = portalConfig.cloggingPort();
         String credisServiceUrl = portalConfig.credisServiceUrl();
 
         servletContext.setInitParameter("loggingServerIP",

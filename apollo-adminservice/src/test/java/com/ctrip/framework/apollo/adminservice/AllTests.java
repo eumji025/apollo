@@ -1,6 +1,7 @@
 package com.ctrip.framework.apollo.adminservice;
 
 import com.ctrip.framework.apollo.adminservice.aop.NamespaceLockTest;
+import com.ctrip.framework.apollo.adminservice.aop.NamespaceUnlockAspectTest;
 import com.ctrip.framework.apollo.adminservice.controller.AppControllerTest;
 import com.ctrip.framework.apollo.adminservice.controller.AppNamespaceControllerTest;
 import com.ctrip.framework.apollo.adminservice.controller.ControllerExceptionTest;
@@ -17,7 +18,8 @@ import org.junit.runners.Suite.SuiteClasses;
 @SuiteClasses({
     AppControllerTest.class, ReleaseControllerTest.class, ItemSetControllerTest.class,
     ControllerExceptionTest.class, ControllerIntegrationExceptionTest.class,
-    NamespaceLockTest.class, InstanceConfigControllerTest.class, AppNamespaceControllerTest.class
+    NamespaceLockTest.class, InstanceConfigControllerTest.class, AppNamespaceControllerTest.class,
+    NamespaceUnlockAspectTest.class
 })
 public class AllTests {
 

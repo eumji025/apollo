@@ -85,7 +85,24 @@ public class ItemService {
     return item;
   }
 
-  public List<Item> findItems(Long namespaceId) {
+  public List<Item> findItemsWithoutOrdered(Long namespaceId) {
+    List<Item> items = itemRepository.findByNamespaceId(namespaceId);
+    if (items == null) {
+      return Collections.emptyList();
+    }
+    return items;
+  }
+
+  public List<Item> findItemsWithoutOrdered(String appId, String clusterName, String namespaceName) {
+    Namespace namespace = namespaceService.findOne(appId, clusterName, namespaceName);
+    if (namespace != null) {
+      return findItemsWithoutOrdered(namespace.getId());
+    } else {
+      return Collections.emptyList();
+    }
+  }
+
+  public List<Item> findItemsWithOrdered(Long namespaceId) {
     List<Item> items = itemRepository.findByNamespaceIdOrderByLineNumAsc(namespaceId);
     if (items == null) {
       return Collections.emptyList();
@@ -93,10 +110,10 @@ public class ItemService {
     return items;
   }
 
-  public List<Item> findItems(String appId, String clusterName, String namespaceName) {
+  public List<Item> findItemsWithOrdered(String appId, String clusterName, String namespaceName) {
     Namespace namespace = namespaceService.findOne(appId, clusterName, namespaceName);
     if (namespace != null) {
-      return findItems(namespace.getId());
+      return findItemsWithOrdered(namespace.getId());
     } else {
       return Collections.emptyList();
     }

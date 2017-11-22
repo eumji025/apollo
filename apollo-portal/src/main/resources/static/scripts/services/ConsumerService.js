@@ -29,11 +29,17 @@ appService.service('ConsumerService', ['$resource', '$q', 'AppUtil',
                 appId: appId
             });
         },
-        assignRoleToConsumer: function (token, appId, namespaceName) {
-            return AppUtil.ajax(resource.assign_role_to_consumer, {token: token}, {
-                appId: appId,
-                namespaceName: namespaceName
-            })
+        assignRoleToConsumer: function (token, type, appId, namespaceName) {
+            return AppUtil.ajax(resource.assign_role_to_consumer, 
+                                {
+                                    token: token,
+                                    type: type 
+                                },
+                                {
+                                    appId: appId,
+                                    namespaceName: namespaceName
+                                }
+            )
         }
     }
 }]);

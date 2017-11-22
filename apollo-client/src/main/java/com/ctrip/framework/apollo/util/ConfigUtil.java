@@ -1,6 +1,9 @@
 package com.ctrip.framework.apollo.util;
 
-import com.google.common.base.Strings;
+import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.MetaDomainConsts;
@@ -8,20 +11,13 @@ import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.core.enums.EnvUtils;
 import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
 import com.ctrip.framework.foundation.Foundation;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.unidal.lookup.annotation.Named;
-
-import java.util.concurrent.TimeUnit;
+import com.google.common.base.Strings;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
  */
-@Named(type = ConfigUtil.class)
 public class ConfigUtil {
   private static final Logger logger = LoggerFactory.getLogger(ConfigUtil.class);
-  private static final String TOOLING_CLUSTER = "tooling";
   private int refreshInterval = 5;
   private TimeUnit refreshIntervalTimeUnit = TimeUnit.MINUTES;
   private int connectTimeout = 1000; //1 second
@@ -36,6 +32,7 @@ public class ConfigUtil {
   private long maxConfigCacheSize = 500;//500 cache key
   private long configCacheExpireTime = 1;//1 minute
   private TimeUnit configCacheExpireTimeUnit = TimeUnit.MINUTES;//1 minute
+  private long longPollingInitialDelayInMills = 2000;//2 seconds
 
   public ConfigUtil() {
     initRefreshInterval();
@@ -44,6 +41,7 @@ public class ConfigUtil {
     initCluster();
     initQPS();
     initMaxConfigCacheSize();
+    initLongPollingInitialDelayInMills();
   }
 
   /**
@@ -74,19 +72,6 @@ public class ConfigUtil {
     //Load data center from system property
     cluster = System.getProperty(ConfigConsts.APOLLO_CLUSTER_KEY);
 
-    String env = Foundation.server().getEnvType();
-    //LPT and DEV will be treated as a cluster(lower case)
-    if (Strings.isNullOrEmpty(cluster) &&
-        (Env.DEV.name().equalsIgnoreCase(env) || Env.LPT.name().equalsIgnoreCase(env))
-        ) {
-      cluster = env.toLowerCase();
-    }
-
-    //Use TOOLING cluster if tooling=true in server.properties
-    if (Strings.isNullOrEmpty(cluster) && isToolingZone()) {
-      cluster = TOOLING_CLUSTER;
-    }
-
     //Use data center as cluster
     if (Strings.isNullOrEmpty(cluster)) {
       cluster = getDataCenter();
@@ -96,11 +81,6 @@ public class ConfigUtil {
     if (Strings.isNullOrEmpty(cluster)) {
       cluster = ConfigConsts.CLUSTER_NAME_DEFAULT;
     }
-  }
-
-  private boolean isToolingZone() {
-    //do not use the new isTooling method since it might not be available in the client side
-    return "true".equalsIgnoreCase(Foundation.server().getProperty("tooling", "false").trim());
   }
 
   /**
@@ -267,5 +247,20 @@ public class ConfigUtil {
 
   public TimeUnit getConfigCacheExpireTimeUnit() {
     return configCacheExpireTimeUnit;
+  }
+
+  private void initLongPollingInitialDelayInMills() {
+    String customizedLongPollingInitialDelay = System.getProperty("apollo.longPollingInitialDelayInMills");
+    if (!Strings.isNullOrEmpty(customizedLongPollingInitialDelay)) {
+      try {
+        longPollingInitialDelayInMills = Long.valueOf(customizedLongPollingInitialDelay);
+      } catch (Throwable ex) {
+        logger.error("Config for apollo.longPollingInitialDelayInMills is invalid: {}", customizedLongPollingInitialDelay);
+      }
+    }
+  }
+
+  public long getLongPollingInitialDelayInMills() {
+    return longPollingInitialDelayInMills;
   }
 }

@@ -1,5 +1,7 @@
 package com.ctrip.framework.apollo.configservice.service;
 
+import com.ctrip.framework.apollo.configservice.wrapper.CaseInsensitiveMapWrapper;
+import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.google.common.base.Joiner;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -52,21 +54,30 @@ public class AppNamespaceServiceWithCache implements InitializingBean {
   private long maxIdScanned;
 
   //store namespaceName -> AppNamespace
-  private Map<String, AppNamespace> publicAppNamespaceCache;
+  private CaseInsensitiveMapWrapper<AppNamespace> publicAppNamespaceCache;
 
   //store appId+namespaceName -> AppNamespace
-  private Map<String, AppNamespace> appNamespaceCache;
+  private CaseInsensitiveMapWrapper<AppNamespace> appNamespaceCache;
 
   //store id -> AppNamespace
   private Map<Long, AppNamespace> appNamespaceIdCache;
 
   public AppNamespaceServiceWithCache() {
+    initialize();
+  }
+
+  private void initialize() {
     maxIdScanned = 0;
-    publicAppNamespaceCache = Maps.newConcurrentMap();
-    appNamespaceCache = Maps.newConcurrentMap();
+    publicAppNamespaceCache = new CaseInsensitiveMapWrapper<>(Maps.newConcurrentMap());
+    appNamespaceCache = new CaseInsensitiveMapWrapper<>(Maps.newConcurrentMap());
     appNamespaceIdCache = Maps.newConcurrentMap();
     scheduledExecutorService = Executors.newScheduledThreadPool(1, ApolloThreadFactory
         .create("AppNamespaceServiceWithCache", true));
+  }
+
+  public AppNamespace findByAppIdAndNamespace(String appId, String namespaceName) {
+    Preconditions.checkArgument(!StringUtils.isContainEmpty(appId, namespaceName), "appId and namespaceName must not be empty");
+    return appNamespaceCache.get(STRING_JOINER.join(appId, namespaceName));
   }
 
   public List<AppNamespace> findByAppIdAndNamespaces(String appId, Set<String> namespaceNames) {
@@ -74,7 +85,6 @@ public class AppNamespaceServiceWithCache implements InitializingBean {
     if (namespaceNames == null || namespaceNames.isEmpty()) {
       return Collections.emptyList();
     }
-//    return appNamespaceRepository.findByAppIdAndNameIn(appId, namespaceNames);
     List<AppNamespace> result = Lists.newArrayList();
     for (String namespaceName : namespaceNames) {
       AppNamespace appNamespace = appNamespaceCache.get(STRING_JOINER.join(appId, namespaceName));
@@ -85,12 +95,16 @@ public class AppNamespaceServiceWithCache implements InitializingBean {
     return result;
   }
 
+  public AppNamespace findPublicNamespaceByName(String namespaceName) {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(namespaceName), "namespaceName must not be empty");
+    return publicAppNamespaceCache.get(namespaceName);
+  }
+
   public List<AppNamespace> findPublicNamespacesByNames(Set<String> namespaceNames) {
     if (namespaceNames == null || namespaceNames.isEmpty()) {
       return Collections.emptyList();
     }
 
-//    return appNamespaceRepository.findByNameInAndIsPublicTrue(namespaceNames);
     List<AppNamespace> result = Lists.newArrayList();
     for (String namespaceName : namespaceNames) {
       AppNamespace appNamespace = publicAppNamespaceCache.get(namespaceName);
@@ -248,5 +262,12 @@ public class AppNamespaceServiceWithCache implements InitializingBean {
     scanIntervalTimeUnit = bizConfig.appNamespaceCacheScanIntervalTimeUnit();
     rebuildInterval = bizConfig.appNamespaceCacheRebuildInterval();
     rebuildIntervalTimeUnit = bizConfig.appNamespaceCacheRebuildIntervalTimeUnit();
+  }
+
+  //only for test use
+  private void reset() throws Exception {
+    scheduledExecutorService.shutdownNow();
+    initialize();
+    afterPropertiesSet();
   }
 }

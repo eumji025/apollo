@@ -9,7 +9,7 @@ import com.ctrip.framework.apollo.common.dto.ReleaseDTO;
 import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.model.NamespaceReleaseModel;
 import com.ctrip.framework.apollo.portal.entity.bo.KVEntity;
 import com.ctrip.framework.apollo.portal.entity.vo.ReleaseCompareResult;
@@ -54,7 +54,7 @@ public class ReleaseService {
                                                      model.getReleaseTitle(), model.getReleaseComment(),
                                                      releaseBy, isEmergencyPublish);
 
-    Tracer.logEvent(CatEventType.RELEASE_NAMESPACE,
+    Tracer.logEvent(TracerEventType.RELEASE_NAMESPACE,
                     String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
 
     return releaseDTO;

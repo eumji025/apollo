@@ -9,7 +9,7 @@ import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
 import com.ctrip.framework.apollo.portal.component.ItemsComparator;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.bo.NamespaceBO;
 import com.ctrip.framework.apollo.portal.spi.UserInfoHolder;
 import com.ctrip.framework.apollo.tracer.Tracer;
@@ -43,7 +43,7 @@ public class NamespaceBranchService {
     NamespaceDTO createdBranch = namespaceBranchAPI.createBranch(appId, env, parentClusterName, namespaceName,
                                                                  userInfoHolder.getUser().getUserId());
 
-    Tracer.logEvent(CatEventType.CREATE_GRAY_RELEASE, String.format("%s+%s+%s+%s", appId, env, parentClusterName,
+    Tracer.logEvent(TracerEventType.CREATE_GRAY_RELEASE, String.format("%s+%s+%s+%s", appId, env, parentClusterName,
                                                                  namespaceName));
     return createdBranch;
 
@@ -64,7 +64,7 @@ public class NamespaceBranchService {
 
     namespaceBranchAPI.updateBranchGrayRules(appId, env, clusterName, namespaceName, branchName, rules);
 
-    Tracer.logEvent(CatEventType.UPDATE_GRAY_RELEASE_RULE,
+    Tracer.logEvent(TracerEventType.UPDATE_GRAY_RELEASE_RULE,
                  String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
   }
 
@@ -75,7 +75,7 @@ public class NamespaceBranchService {
 
     namespaceBranchAPI.deleteBranch(appId, env, clusterName, namespaceName, branchName, operator);
 
-    Tracer.logEvent(CatEventType.DELETE_GRAY_RELEASE,
+    Tracer.logEvent(TracerEventType.DELETE_GRAY_RELEASE,
                  String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
   }
 
@@ -90,7 +90,7 @@ public class NamespaceBranchService {
         releaseService.updateAndPublish(appId, env, clusterName, namespaceName, title, comment,
                                         branchName, isEmergencyPublish, deleteBranch, changeSets);
 
-    Tracer.logEvent(CatEventType.MERGE_GRAY_RELEASE,
+    Tracer.logEvent(TracerEventType.MERGE_GRAY_RELEASE,
                  String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
 
     return mergedResult;

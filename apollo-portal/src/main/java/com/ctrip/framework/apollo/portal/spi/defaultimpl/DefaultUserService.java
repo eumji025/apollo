@@ -5,13 +5,8 @@ import com.google.common.collect.Lists;
 import com.ctrip.framework.apollo.portal.entity.bo.UserInfo;
 import com.ctrip.framework.apollo.portal.spi.UserService;
 
-import org.springframework.util.CollectionUtils;
-
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Jason Song(song_s@ctrip.com)

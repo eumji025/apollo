@@ -1,6 +1,6 @@
 directive_module.directive('itemmodal', itemModalDirective);
 
-function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
+function itemModalDirective(toastr, $sce, AppUtil, EventManager, ConfigService) {
     return {
         restrict: 'E',
         templateUrl: '../../views/component/item-modal.html',
@@ -15,7 +15,6 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
         },
         link: function (scope) {
 
-
             var TABLE_VIEW_OPER_TYPE = {
                 CREATE: 'create',
                 UPDATE: 'update'
@@ -23,6 +22,13 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
 
             scope.doItem = doItem;
             scope.collectSelectedClusters = collectSelectedClusters;
+            scope.showHiddenChars = showHiddenChars;
+
+            $('#itemModal').on('show.bs.modal', function (e) {
+                scope.showHiddenCharsContext = false;
+                scope.hiddenCharCounter = 0;
+                scope.valueWithHiddenChars = $sce.trustAsHtml('');
+            });
 
             function doItem() {
 
@@ -61,7 +67,6 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
                                                       namespace: scope.toOperationNamespace
                                                   });
 
-
                             }, function (result) {
                                 toastr.error(AppUtil.errorMsg(result), "添加失败");
                                 scope.item.addItemBtnDisabled = false;
@@ -69,6 +74,7 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
                     } else {
                         if (selectedClusters.length == 0) {
                             toastr.error("请选择集群");
+                            scope.item.addItemBtnDisabled = false;
                             return;
                         }
 
@@ -97,7 +103,6 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
                         });
                     }
 
-
                 } else {
 
                     if (!scope.item.comment) {
@@ -114,7 +119,7 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
                                               {
                                                   namespace: scope.toOperationNamespace
                                               });
-                            
+
                             AppUtil.hideModal('#itemModal');
 
                             toastr.success("更新成功, 如需生效请发布");
@@ -126,8 +131,47 @@ function itemModalDirective(toastr, AppUtil, EventManager, ConfigService) {
             }
 
             var selectedClusters = [];
+
             function collectSelectedClusters(data) {
                 selectedClusters = data;
+            }
+
+            function showHiddenChars() {
+                var value = scope.item.value;
+                if (!value) {
+                    return;
+                }
+
+                var hiddenCharCounter = 0, valueWithHiddenChars = value;
+
+                for (var i = 0; i < valueWithHiddenChars.length; i++) {
+                    var c = valueWithHiddenChars[i];
+                    if (isHiddenChar(c)) {
+                        valueWithHiddenChars = valueWithHiddenChars.replace(c, viewHiddenChar);
+                        hiddenCharCounter++;
+                    }
+                }
+
+                scope.showHiddenCharsContext = true;
+                scope.hiddenCharCounter = hiddenCharCounter;
+                scope.valueWithHiddenChars = $sce.trustAsHtml(valueWithHiddenChars);
+
+            }
+
+            function isHiddenChar(c) {
+                return c == '\t' || c == '\n' || c == ' ';
+            }
+
+            function viewHiddenChar(c) {
+
+                if (c == '\t') {
+                    return '<mark>#制表符#</mark>';
+                } else if (c == '\n') {
+                    return '<mark>#换行符#</mark>';
+                } else if (c == ' ') {
+                    return '<mark>#空格#</mark>';
+                }
+
             }
         }
     }

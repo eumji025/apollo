@@ -15,6 +15,7 @@ function ConfigBaseInfoController($rootScope, $scope, $window, $location, toastr
 
     if (!appId) {
         $window.location.href = '/index.html';
+        return;
     }
 
     initPage();
@@ -51,6 +52,7 @@ function ConfigBaseInfoController($rootScope, $scope, $window, $location, toastr
     }
 
     function loadAppInfo() {
+
         $scope.notFoundApp = true;
         AppService.load($rootScope.pageContext.appId).then(function (result) {
             $scope.notFoundApp = false;
@@ -60,40 +62,40 @@ function ConfigBaseInfoController($rootScope, $scope, $window, $location, toastr
 
             loadNavTree();
             recordVisitApp();
+            findMissEnvs();
 
             $(".J_appFound").removeClass("hidden");
         }, function (result) {
             $(".J_appNotFound").removeClass("hidden");
         });
+    }
 
-        ////// 补缺失的环境 //////
+    $scope.createAppInMissEnv = function () {
+        var count = 0;
+        $scope.missEnvs.forEach(function (env) {
+            AppService.create_remote(env, $scope.appBaseInfo).then(function (result) {
+                toastr.success(env, '创建成功');
+                count++;
+                if (count == $scope.missEnvs.length) {
+                    location.reload(true);
+                }
+            }, function (result) {
+                toastr.error(AppUtil.errorMsg(result), '创建失败:' + env);
+                count++;
+                if (count == $scope.missEnvs.length) {
+                    location.reload(true);
+                }
+            });
+        });
+    };
+
+    function findMissEnvs() {
         $scope.missEnvs = [];
         AppService.find_miss_envs($rootScope.pageContext.appId).then(function (result) {
             $scope.missEnvs = AppUtil.collectData(result);
-        }, function (result) {
-
         });
 
-        $scope.createAppInMissEnv = function () {
-            var count = 0;
-            $scope.missEnvs.forEach(function (env) {
-                AppService.create_remote(env, $scope.appBaseInfo).then(function (result) {
-                    toastr.success(env, '创建成功');
-                    count++;
-                    if (count == $scope.missEnvs.length) {
-                        location.reload(true);
-                    }
-                }, function (result) {
-                    toastr.error(AppUtil.errorMsg(result), '创建失败:' + env);
-                    count++;
-                    if (count == $scope.missEnvs.length) {
-                        location.reload(true);
-                    }
-                });
-            });
-        };
     }
-
     function recordVisitApp() {
         //save user recent visited apps
         var VISITED_APPS_STORAGE_KEY = "VisitedAppsV2";

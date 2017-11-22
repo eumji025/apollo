@@ -60,7 +60,7 @@ appUtil.service('AppUtil', ['toastr', '$window', '$q', function (toastr, $window
             var result = {};
             params.forEach(function (param) {
                 var kv = param.split("=");
-                result[kv[0]] = kv[1];
+                result[kv[0]] = decodeURIComponent(kv[1]);
             });
             return result;
         },

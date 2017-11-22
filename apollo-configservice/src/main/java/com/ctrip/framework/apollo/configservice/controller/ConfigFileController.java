@@ -163,6 +163,8 @@ public class ConfigFileController implements ReleaseMessageListener {
                      HttpServletResponse response) throws IOException {
     //strip out .properties suffix
     namespace = namespaceUtil.filterNamespaceName(namespace);
+    //fix the character case issue, such as FX.apollo <-> fx.apollo
+    namespace = namespaceUtil.normalizeNamespace(appId, namespace);
 
     if (Strings.isNullOrEmpty(clientIp)) {
       clientIp = tryToGetClientIp(request);
@@ -225,7 +227,7 @@ public class ConfigFileController implements ReleaseMessageListener {
                             HttpServletRequest request,
                             HttpServletResponse response) throws IOException {
     ApolloConfig apolloConfig = configController.queryConfig(appId, clusterName, namespace,
-        dataCenter, "-1", clientIp, request, response);
+        dataCenter, "-1", clientIp, null, request, response);
 
     if (apolloConfig == null || apolloConfig.getConfigurations() == null) {
       return null;

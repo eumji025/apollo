@@ -36,15 +36,15 @@ public class ReleaseController {
   @PreAuthorize(value = "@consumerPermissionValidator.hasReleaseNamespacePermission(#request, #appId, #namespaceName)")
   @RequestMapping(value = "/apps/{appId}/clusters/{clusterName}/namespaces/{namespaceName}/releases", method = RequestMethod.POST)
   public OpenReleaseDTO createRelease(@PathVariable String appId, @PathVariable String env,
-                                      @PathVariable String clusterName, @PathVariable String
-                                          namespaceName,
+                                      @PathVariable String clusterName,
+                                      @PathVariable String namespaceName,
                                       @RequestBody NamespaceReleaseModel model,
                                       HttpServletRequest request) {
 
     checkModel(model != null);
     RequestPrecondition.checkArguments(!StringUtils.isContainEmpty(model.getReleasedBy(), model
             .getReleaseTitle()),
-        "releaseTitle and releaseBy can not be empty");
+        "Params(releaseTitle and releasedBy) can not be empty");
 
     if (userService.findByUserId(model.getReleasedBy()) == null) {
       throw new BadRequestException("user(releaseBy) not exists");

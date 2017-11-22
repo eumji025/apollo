@@ -11,7 +11,7 @@ import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
 import com.ctrip.framework.apollo.portal.component.txtresolver.ConfigTextResolver;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.model.NamespaceTextModel;
 import com.ctrip.framework.apollo.portal.entity.vo.ItemDiffs;
 import com.ctrip.framework.apollo.portal.entity.vo.NamespaceIdentifier;
@@ -73,9 +73,9 @@ public class ItemService {
     changeSets.setDataChangeLastModifiedBy(userInfoHolder.getUser().getUserId());
     updateItems(appId, env, clusterName, namespaceName, changeSets);
 
-    Tracer.logEvent(CatEventType.MODIFY_NAMESPACE_BY_TEXT,
+    Tracer.logEvent(TracerEventType.MODIFY_NAMESPACE_BY_TEXT,
         String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
-    Tracer.logEvent(CatEventType.MODIFY_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
+    Tracer.logEvent(TracerEventType.MODIFY_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
   }
 
   public void updateItems(String appId, Env env, String clusterName, String namespaceName, ItemChangeSets changeSets){
@@ -92,7 +92,7 @@ public class ItemService {
     item.setNamespaceId(namespace.getId());
 
     ItemDTO itemDTO = itemAPI.createItem(appId, env, clusterName, namespaceName, item);
-    Tracer.logEvent(CatEventType.MODIFY_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
+    Tracer.logEvent(TracerEventType.MODIFY_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
     return itemDTO;
   }
 
@@ -126,7 +126,7 @@ public class ItemService {
 
       itemAPI.updateItemsByChangeSet(appId, env, clusterName, namespaceName, changeSets);
 
-      Tracer.logEvent(CatEventType.SYNC_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
+      Tracer.logEvent(TracerEventType.SYNC_NAMESPACE, String.format("%s+%s+%s+%s", appId, env, clusterName, namespaceName));
     }
   }
 

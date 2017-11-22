@@ -1,29 +1,16 @@
 package com.ctrip.framework.apollo.internals;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.SettableFuture;
-
-import com.ctrip.framework.apollo.core.dto.ApolloConfig;
-import com.ctrip.framework.apollo.core.dto.ApolloConfigNotification;
-import com.ctrip.framework.apollo.core.dto.ServiceDTO;
-import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
-import com.ctrip.framework.apollo.util.ConfigUtil;
-import com.ctrip.framework.apollo.util.http.HttpRequest;
-import com.ctrip.framework.apollo.util.http.HttpResponse;
-import com.ctrip.framework.apollo.util.http.HttpUtil;
-
-import org.codehaus.plexus.personality.plexus.lifecycle.phase.InitializationException;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.runners.MockitoJUnitRunner;
-import org.mockito.stubbing.Answer;
-import org.unidal.lookup.ComponentTestCase;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.lang.reflect.Type;
 import java.util.List;
@@ -33,24 +20,43 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
+
+import com.ctrip.framework.apollo.build.MockInjector;
+import com.ctrip.framework.apollo.core.dto.ApolloConfig;
+import com.ctrip.framework.apollo.core.dto.ApolloConfigNotification;
+import com.ctrip.framework.apollo.core.dto.ApolloNotificationMessages;
+import com.ctrip.framework.apollo.core.dto.ServiceDTO;
+import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
+import com.ctrip.framework.apollo.util.ConfigUtil;
+import com.ctrip.framework.apollo.util.http.HttpRequest;
+import com.ctrip.framework.apollo.util.http.HttpResponse;
+import com.ctrip.framework.apollo.util.http.HttpUtil;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.net.UrlEscapers;
+import com.google.common.util.concurrent.SettableFuture;
+import com.google.gson.Gson;
 
 /**
  * Created by Jason on 4/9/16.
  */
 @RunWith(MockitoJUnitRunner.class)
-public class RemoteConfigRepositoryTest extends ComponentTestCase {
+public class RemoteConfigRepositoryTest {
   @Mock
   private ConfigServiceLocator configServiceLocator;
   private String someNamespace;
+  private String someServerUrl;
+  private ConfigUtil configUtil;
+  private HttpUtil httpUtil;
   @Mock
   private static HttpResponse<ApolloConfig> someResponse;
   @Mock
@@ -59,17 +65,28 @@ public class RemoteConfigRepositoryTest extends ComponentTestCase {
 
   @Before
   public void setUp() throws Exception {
-    super.tearDown();//clear the container
-    super.setUp();
     someNamespace = "someName";
 
     when(pollResponse.getStatusCode()).thenReturn(HttpServletResponse.SC_NOT_MODIFIED);
 
-    defineComponent(ConfigUtil.class, MockConfigUtil.class);
-    defineComponent(ConfigServiceLocator.class, MockConfigServiceLocator.class);
-    defineComponent(HttpUtil.class, MockHttpUtil.class);
+    MockInjector.reset();
+    configUtil = new MockConfigUtil();
+    MockInjector.setInstance(ConfigUtil.class, configUtil);
 
-    remoteConfigLongPollService = lookup(RemoteConfigLongPollService.class);
+    someServerUrl = "http://someServer";
+
+    ServiceDTO serviceDTO = mock(ServiceDTO.class);
+
+    when(serviceDTO.getHomepageUrl()).thenReturn(someServerUrl);
+    when(configServiceLocator.getConfigServices()).thenReturn(Lists.newArrayList(serviceDTO));
+    MockInjector.setInstance(ConfigServiceLocator.class, configServiceLocator);
+
+    httpUtil = spy(new MockHttpUtil());
+    MockInjector.setInstance(HttpUtil.class, httpUtil);
+
+    remoteConfigLongPollService = new RemoteConfigLongPollService();
+
+    MockInjector.setInstance(RemoteConfigLongPollService.class, remoteConfigLongPollService);
   }
 
   @Test
@@ -157,8 +174,15 @@ public class RemoteConfigRepositoryTest extends ComponentTestCase {
 
     Map<String, String> newConfigurations = ImmutableMap.of("someKey", "anotherValue");
     ApolloConfig newApolloConfig = assembleApolloConfig(newConfigurations);
+
+    ApolloNotificationMessages notificationMessages = new ApolloNotificationMessages();
+    String someKey = "someKey";
+    long someNotificationId = 1;
+    notificationMessages.put(someKey, someNotificationId);
+
     ApolloConfigNotification someNotification = mock(ApolloConfigNotification.class);
     when(someNotification.getNamespaceName()).thenReturn(someNamespace);
+    when(someNotification.getMessages()).thenReturn(notificationMessages);
 
     when(pollResponse.getStatusCode()).thenReturn(HttpServletResponse.SC_OK);
     when(pollResponse.getBody()).thenReturn(Lists.newArrayList(someNotification));
@@ -170,21 +194,37 @@ public class RemoteConfigRepositoryTest extends ComponentTestCase {
 
     verify(someListener, times(1)).onRepositoryChange(eq(someNamespace), captor.capture());
     assertEquals(newConfigurations, captor.getValue());
+
+    final ArgumentCaptor<HttpRequest> httpRequestArgumentCaptor = ArgumentCaptor.forClass(HttpRequest.class);
+    verify(httpUtil, atLeast(2)).doGet(httpRequestArgumentCaptor.capture(), eq(ApolloConfig.class));
+
+    HttpRequest request = httpRequestArgumentCaptor.getValue();
+
+    assertTrue(request.getUrl().contains("messages=%7B%22details%22%3A%7B%22someKey%22%3A1%7D%7D"));
   }
 
   @Test
   public void testAssembleQueryConfigUrl() throws Exception {
+    Gson gson = new Gson();
     String someUri = "http://someServer";
     String someAppId = "someAppId";
     String someCluster = "someCluster+ &.-_someSign";
     String someReleaseKey = "20160705193346-583078ef5716c055+20160705193308-31c471ddf9087c3f";
+
+    ApolloNotificationMessages notificationMessages = new ApolloNotificationMessages();
+    String someKey = "someKey";
+    long someNotificationId = 1;
+    String anotherKey = "anotherKey";
+    long anotherNotificationId = 2;
+    notificationMessages.put(someKey, someNotificationId);
+    notificationMessages.put(anotherKey, anotherNotificationId);
 
     RemoteConfigRepository remoteConfigRepository = new RemoteConfigRepository(someNamespace);
     ApolloConfig someApolloConfig = mock(ApolloConfig.class);
     when(someApolloConfig.getReleaseKey()).thenReturn(someReleaseKey);
 
     String queryConfigUrl = remoteConfigRepository
-        .assembleQueryConfigUrl(someUri, someAppId, someCluster, someNamespace, null,
+        .assembleQueryConfigUrl(someUri, someAppId, someCluster, someNamespace, null, notificationMessages,
             someApolloConfig);
 
     remoteConfigLongPollService.stopLongPollingRefresh();
@@ -193,7 +233,8 @@ public class RemoteConfigRepositoryTest extends ComponentTestCase {
             "http://someServer/configs/someAppId/someCluster+%20&.-_someSign/" + someNamespace));
     assertTrue(queryConfigUrl
         .contains("releaseKey=20160705193346-583078ef5716c055%2B20160705193308-31c471ddf9087c3f"));
-
+    assertTrue(queryConfigUrl
+        .contains("messages=" + UrlEscapers.urlFormParameterEscaper().escape(gson.toJson(notificationMessages))));
   }
 
   private ApolloConfig assembleApolloConfig(Map<String, String> configurations) {
@@ -243,22 +284,10 @@ public class RemoteConfigRepositoryTest extends ComponentTestCase {
     public TimeUnit getOnErrorRetryIntervalTimeUnit() {
       return TimeUnit.MILLISECONDS;
     }
-  }
-
-  public static class MockConfigServiceLocator extends ConfigServiceLocator {
-    @Override
-    public List<ServiceDTO> getConfigServices() {
-      String someServerUrl = "http://someServer";
-
-      ServiceDTO serviceDTO = mock(ServiceDTO.class);
-
-      when(serviceDTO.getHomepageUrl()).thenReturn(someServerUrl);
-      return Lists.newArrayList(serviceDTO);
-    }
 
     @Override
-    public void initialize() throws InitializationException {
-      //do nothing
+    public long getLongPollingInitialDelayInMills() {
+      return 0;
     }
   }
 

@@ -1,17 +1,26 @@
 package com.ctrip.framework.apollo.internals;
 
-import com.google.common.base.Joiner;
-import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.escape.Escaper;
-import com.google.common.net.UrlEscapers;
-import com.google.common.util.concurrent.RateLimiter;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.ctrip.framework.apollo.Apollo;
+import com.ctrip.framework.apollo.build.ApolloInjector;
 import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.dto.ApolloConfig;
+import com.ctrip.framework.apollo.core.dto.ApolloNotificationMessages;
 import com.ctrip.framework.apollo.core.dto.ServiceDTO;
+import com.ctrip.framework.apollo.core.schedule.ExponentialSchedulePolicy;
+import com.ctrip.framework.apollo.core.schedule.SchedulePolicy;
 import com.ctrip.framework.apollo.core.utils.ApolloThreadFactory;
 import com.ctrip.framework.apollo.exceptions.ApolloConfigException;
 import com.ctrip.framework.apollo.exceptions.ApolloConfigStatusCodeException;
@@ -22,21 +31,14 @@ import com.ctrip.framework.apollo.util.ExceptionUtil;
 import com.ctrip.framework.apollo.util.http.HttpRequest;
 import com.ctrip.framework.apollo.util.http.HttpResponse;
 import com.ctrip.framework.apollo.util.http.HttpUtil;
-
-import org.codehaus.plexus.PlexusContainer;
-import org.codehaus.plexus.component.repository.exception.ComponentLookupException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.unidal.lookup.ContainerLoader;
-
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicReference;
+import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
+import com.google.common.util.concurrent.RateLimiter;
+import com.google.gson.Gson;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -45,16 +47,19 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
   private static final Logger logger = LoggerFactory.getLogger(RemoteConfigRepository.class);
   private static final Joiner STRING_JOINER = Joiner.on(ConfigConsts.CLUSTER_NAMESPACE_SEPARATOR);
   private static final Joiner.MapJoiner MAP_JOINER = Joiner.on("&").withKeyValueSeparator("=");
-  private PlexusContainer m_container;
-  private final ConfigServiceLocator m_serviceLocator;
-  private final HttpUtil m_httpUtil;
-  private final ConfigUtil m_configUtil;
-  private final RemoteConfigLongPollService remoteConfigLongPollService;
+  private ConfigServiceLocator m_serviceLocator;
+  private HttpUtil m_httpUtil;
+  private ConfigUtil m_configUtil;
+  private RemoteConfigLongPollService remoteConfigLongPollService;
   private volatile AtomicReference<ApolloConfig> m_configCache;
   private final String m_namespace;
   private final static ScheduledExecutorService m_executorService;
   private AtomicReference<ServiceDTO> m_longPollServiceDto;
+  private AtomicReference<ApolloNotificationMessages> m_remoteMessages;
   private RateLimiter m_loadConfigRateLimiter;
+  private AtomicBoolean m_configNeedForceRefresh;
+  private SchedulePolicy m_loadConfigFailSchedulePolicy;
+  private Gson gson;
   private static final Escaper pathEscaper = UrlEscapers.urlPathSegmentEscaper();
   private static final Escaper queryParamEscaper = UrlEscapers.urlFormParameterEscaper();
 
@@ -71,18 +76,17 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
   public RemoteConfigRepository(String namespace) {
     m_namespace = namespace;
     m_configCache = new AtomicReference<>();
-    m_container = ContainerLoader.getDefaultContainer();
-    try {
-      m_configUtil = m_container.lookup(ConfigUtil.class);
-      m_httpUtil = m_container.lookup(HttpUtil.class);
-      m_serviceLocator = m_container.lookup(ConfigServiceLocator.class);
-      remoteConfigLongPollService = m_container.lookup(RemoteConfigLongPollService.class);
-    } catch (ComponentLookupException ex) {
-      Tracer.logError(ex);
-      throw new ApolloConfigException("Unable to load component!", ex);
-    }
+    m_configUtil = ApolloInjector.getInstance(ConfigUtil.class);
+    m_httpUtil = ApolloInjector.getInstance(HttpUtil.class);
+    m_serviceLocator = ApolloInjector.getInstance(ConfigServiceLocator.class);
+    remoteConfigLongPollService = ApolloInjector.getInstance(RemoteConfigLongPollService.class);
     m_longPollServiceDto = new AtomicReference<>();
+    m_remoteMessages = new AtomicReference<>();
     m_loadConfigRateLimiter = RateLimiter.create(m_configUtil.getLoadConfigQPS());
+    m_configNeedForceRefresh = new AtomicBoolean(true);
+    m_loadConfigFailSchedulePolicy = new ExponentialSchedulePolicy(m_configUtil.getOnErrorRetryInterval(),
+        m_configUtil.getOnErrorRetryInterval() * 8);
+    gson = new Gson();
     this.trySync();
     this.schedulePeriodicRefresh();
     this.scheduleLongPollingRefresh();
@@ -164,10 +168,12 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     String cluster = m_configUtil.getCluster();
     String dataCenter = m_configUtil.getDataCenter();
     Tracer.logEvent("Apollo.Client.ConfigMeta", STRING_JOINER.join(appId, cluster, m_namespace));
-    int maxRetries = 2;
+    int maxRetries = m_configNeedForceRefresh.get() ? 2 : 1;
+    long onErrorSleepTime = 0; // 0 means no sleep
     Throwable exception = null;
 
     List<ServiceDTO> configServices = getConfigServices();
+    String url = null;
     for (int i = 0; i < maxRetries; i++) {
       List<ServiceDTO> randomConfigServices = Lists.newLinkedList(configServices);
       Collections.shuffle(randomConfigServices);
@@ -177,9 +183,20 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
       }
 
       for (ServiceDTO configService : randomConfigServices) {
-        String url =
-            assembleQueryConfigUrl(configService.getHomepageUrl(), appId, cluster, m_namespace,
-                dataCenter, m_configCache.get());
+        if (onErrorSleepTime > 0) {
+          logger.warn(
+              "Load config failed, will retry in {} {}. appId: {}, cluster: {}, namespaces: {}",
+              onErrorSleepTime, m_configUtil.getOnErrorRetryIntervalTimeUnit(), appId, cluster, m_namespace);
+
+          try {
+            m_configUtil.getOnErrorRetryIntervalTimeUnit().sleep(onErrorSleepTime);
+          } catch (InterruptedException e) {
+            //ignore
+          }
+        }
+
+        url = assembleQueryConfigUrl(configService.getHomepageUrl(), appId, cluster, m_namespace,
+                dataCenter, m_remoteMessages.get(), m_configCache.get());
 
         logger.debug("Loading config from {}", url);
         HttpRequest request = new HttpRequest(url);
@@ -189,6 +206,8 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
         try {
 
           HttpResponse<ApolloConfig> response = m_httpUtil.doGet(request, ApolloConfig.class);
+          m_configNeedForceRefresh.set(false);
+          m_loadConfigFailSchedulePolicy.success();
 
           transaction.addData("StatusCode", response.getStatusCode());
           transaction.setStatus(Transaction.SUCCESS);
@@ -225,22 +244,20 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
           transaction.complete();
         }
 
+        // if force refresh, do normal sleep, if normal config load, do exponential sleep
+        onErrorSleepTime = m_configNeedForceRefresh.get() ? m_configUtil.getOnErrorRetryInterval() :
+            m_loadConfigFailSchedulePolicy.fail();
       }
 
-      try {
-        m_configUtil.getOnErrorRetryIntervalTimeUnit().sleep(m_configUtil.getOnErrorRetryInterval());
-      } catch (InterruptedException ex) {
-        //ignore
-      }
     }
     String message = String.format(
-        "Load Apollo Config failed - appId: %s, cluster: %s, namespace: %s",
-        appId, cluster, m_namespace);
+        "Load Apollo Config failed - appId: %s, cluster: %s, namespace: %s, url: %s",
+        appId, cluster, m_namespace, url);
     throw new ApolloConfigException(message, exception);
   }
 
   String assembleQueryConfigUrl(String uri, String appId, String cluster, String namespace,
-                                String dataCenter, ApolloConfig previousConfig) {
+                                String dataCenter, ApolloNotificationMessages remoteMessages, ApolloConfig previousConfig) {
 
     String path = "configs/%s/%s/%s";
     List<String> pathParams =
@@ -261,6 +278,10 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
       queryParams.put("ip", queryParamEscaper.escape(localIp));
     }
 
+    if (remoteMessages != null) {
+      queryParams.put("messages", queryParamEscaper.escape(gson.toJson(remoteMessages)));
+    }
+
     String pathExpanded = String.format(path, pathParams.toArray());
 
     if (!queryParams.isEmpty()) {
@@ -276,11 +297,13 @@ public class RemoteConfigRepository extends AbstractConfigRepository {
     remoteConfigLongPollService.submit(m_namespace, this);
   }
 
-  public void onLongPollNotified(ServiceDTO longPollNotifiedServiceDto) {
+  public void onLongPollNotified(ServiceDTO longPollNotifiedServiceDto, ApolloNotificationMessages remoteMessages) {
     m_longPollServiceDto.set(longPollNotifiedServiceDto);
+    m_remoteMessages.set(remoteMessages);
     m_executorService.submit(new Runnable() {
       @Override
       public void run() {
+        m_configNeedForceRefresh.set(true);
         trySync();
       }
     });

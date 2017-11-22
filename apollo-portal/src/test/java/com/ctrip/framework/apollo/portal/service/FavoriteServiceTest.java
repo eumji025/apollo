@@ -6,6 +6,7 @@ import com.ctrip.framework.apollo.portal.entity.po.Favorite;
 import com.ctrip.framework.apollo.portal.repository.FavoriteRepository;
 
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
@@ -22,6 +23,10 @@ public class FavoriteServiceTest extends AbstractIntegrationTest {
 
   private String testUser = "apollo";
 
+  @Before
+  public void before() {
+
+  }
 
   @Test
   @Sql(scripts = "/sql/cleanup.sql", executionPhase = Sql.ExecutionPhase.AFTER_TEST_METHOD)

@@ -4,7 +4,7 @@ import com.ctrip.framework.apollo.common.exception.ServiceException;
 import com.ctrip.framework.apollo.core.MetaDomainConsts;
 import com.ctrip.framework.apollo.core.dto.ServiceDTO;
 import com.ctrip.framework.apollo.core.enums.Env;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.tracer.Tracer;
 import com.ctrip.framework.apollo.tracer.spi.Transaction;
 
@@ -101,7 +101,7 @@ public class RetryableRestTemplate {
         logger.error("Http request failed, uri: {}, method: {}", uri, method, t);
         Tracer.logError(t);
         if (canRetry(t, method)) {
-          Tracer.logEvent(CatEventType.API_RETRY, uri);
+          Tracer.logEvent(TracerEventType.API_RETRY, uri);
         } else {//biz exception rethrow
           ct.setStatus(t);
           ct.complete();
@@ -144,7 +144,7 @@ public class RetryableRestTemplate {
         logger.error("Http request failed, uri: {}, method: {}", uri, HttpMethod.GET, t);
         Tracer.logError(t);
         if (canRetry(t, HttpMethod.GET)) {
-          Tracer.logEvent(CatEventType.API_RETRY, uri);
+          Tracer.logEvent(TracerEventType.API_RETRY, uri);
         } else {// biz exception rethrow
           ct.setStatus(t);
           ct.complete();

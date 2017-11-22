@@ -37,7 +37,7 @@ public class ClassLoaderUtil {
       }
     } catch (Throwable ex) {
       classPath = System.getProperty("user.dir");
-      ex.printStackTrace();
+      logger.warn("Failed to locate class path, fallback to user.dir: {}", classPath, ex);
     }
   }
 

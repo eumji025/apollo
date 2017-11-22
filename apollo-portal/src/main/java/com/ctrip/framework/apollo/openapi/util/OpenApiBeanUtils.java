@@ -4,10 +4,13 @@ import com.google.common.base.Preconditions;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 
+import com.ctrip.framework.apollo.common.dto.AppNamespaceDTO;
 import com.ctrip.framework.apollo.common.dto.ItemDTO;
 import com.ctrip.framework.apollo.common.dto.NamespaceLockDTO;
 import com.ctrip.framework.apollo.common.dto.ReleaseDTO;
+import com.ctrip.framework.apollo.common.entity.AppNamespace;
 import com.ctrip.framework.apollo.common.utils.BeanUtils;
+import com.ctrip.framework.apollo.openapi.dto.OpenAppNamespaceDTO;
 import com.ctrip.framework.apollo.openapi.dto.OpenItemDTO;
 import com.ctrip.framework.apollo.openapi.dto.OpenNamespaceDTO;
 import com.ctrip.framework.apollo.openapi.dto.OpenNamespaceLockDTO;
@@ -40,6 +43,15 @@ public class OpenApiBeanUtils {
     return BeanUtils.transfrom(ItemDTO.class, openItemDTO);
   }
 
+  public static OpenAppNamespaceDTO transformToOpenAppNamespaceDTO(AppNamespace appNamespace) {
+    Preconditions.checkArgument(appNamespace != null);
+    return BeanUtils.transfrom(OpenAppNamespaceDTO.class, appNamespace);
+  }
+
+  public static AppNamespace transformToAppNamespace(OpenAppNamespaceDTO openAppNamespaceDTO) {
+    Preconditions.checkArgument(openAppNamespaceDTO != null);
+    return BeanUtils.transfrom(AppNamespace.class, openAppNamespaceDTO);
+  }
 
   public static OpenReleaseDTO transformFromReleaseDTO(ReleaseDTO release) {
     Preconditions.checkArgument(release != null);

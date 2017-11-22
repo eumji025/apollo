@@ -17,7 +17,7 @@ import com.ctrip.framework.apollo.core.enums.Env;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.portal.api.AdminServiceAPI;
 import com.ctrip.framework.apollo.portal.component.PortalSettings;
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.bo.ItemBO;
 import com.ctrip.framework.apollo.portal.entity.bo.NamespaceBO;
 import com.ctrip.framework.apollo.portal.spi.UserInfoHolder;
@@ -64,7 +64,7 @@ public class NamespaceService {
     namespace.setDataChangeLastModifiedBy(userInfoHolder.getUser().getUserId());
     NamespaceDTO createdNamespace = namespaceAPI.createNamespace(env, namespace);
 
-    Tracer.logEvent(CatEventType.CREATE_NAMESPACE,
+    Tracer.logEvent(TracerEventType.CREATE_NAMESPACE,
                     String.format("%s+%s+%s+%s", namespace.getAppId(), env, namespace.getClusterName(),
                                   namespace.getNamespaceName()));
     return createdNamespace;

@@ -132,8 +132,9 @@ public class ConsumerService {
     long namespaceReleaseRoleId = namespaceReleaseRole.getId();
 
     ConsumerRole managedModifyRole = consumerRoleRepository.findByConsumerIdAndRoleId(consumerId, namespaceModifyRoleId);
-    if (managedModifyRole != null) {
-      throw new BadRequestException("Namespace's role has assigned to consumer.");
+    ConsumerRole managedReleaseRole = consumerRoleRepository.findByConsumerIdAndRoleId(consumerId, namespaceReleaseRoleId);
+    if (managedModifyRole != null && managedReleaseRole != null) {
+      return Arrays.asList(managedModifyRole, managedReleaseRole);
     }
 
     String operator = userInfoHolder.getUser().getUserId();
@@ -145,6 +146,29 @@ public class ConsumerService {
     ConsumerRole createdReleaseConsumerRole = consumerRoleRepository.save(namespaceReleaseConsumerRole);
 
     return Arrays.asList(createdModifyConsumerRole, createdReleaseConsumerRole);
+  }
+
+  @Transactional
+  public ConsumerRole assignAppRoleToConsumer(String token, String appId) {
+    Long consumerId = getConsumerIdByToken(token);
+    if (consumerId == null) {
+      throw new BadRequestException("Token is Illegal");
+    }
+
+    Role masterRole = rolePermissionService.findRoleByRoleName(RoleUtils.buildAppMasterRoleName(appId));
+    if (masterRole == null) {
+      throw new BadRequestException("App's role does not exist. Please check whether app has created.");
+    }
+
+    long roleId = masterRole.getId();
+    ConsumerRole managedModifyRole = consumerRoleRepository.findByConsumerIdAndRoleId(consumerId, roleId);
+    if (managedModifyRole != null) {
+      return managedModifyRole;
+    }
+
+    String operator = userInfoHolder.getUser().getUserId();
+    ConsumerRole consumerRole = createConsumerRole(consumerId, roleId, operator);
+    return consumerRoleRepository.save(consumerRole);
   }
 
   @Transactional

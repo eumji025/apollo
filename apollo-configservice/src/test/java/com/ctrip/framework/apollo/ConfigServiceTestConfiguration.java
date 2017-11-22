@@ -1,6 +1,6 @@
 package com.ctrip.framework.apollo;
 
-import com.ctrip.framework.apollo.common.auth.WebSecurityConfig;
+import com.ctrip.framework.apollo.biz.auth.WebSecurityConfig;
 import com.ctrip.framework.apollo.configservice.ConfigServiceApplication;
 
 import org.springframework.boot.autoconfigure.EnableAutoConfiguration;

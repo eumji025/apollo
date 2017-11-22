@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>com.ctrip.framework.apollo</groupId>
 		<artifactId>apollo</artifactId>
-		<version>0.6.0</version>
+		<version>0.9.1-SNAPSHOT</version>
 		<relativePath>../pom.xml</relativePath>
 	</parent>
 	<modelVersion>4.0.0</modelVersion>
@@ -21,12 +21,12 @@
 			<artifactId>apollo-core</artifactId>
 		</dependency>
 		<!-- end of apollo -->
-		<!-- foundation service -->
+		<!-- guice -->
 		<dependency>
-			<groupId>org.unidal.framework</groupId>
-			<artifactId>foundation-service</artifactId>
+			<groupId>com.google.inject</groupId>
+			<artifactId>guice</artifactId>
 		</dependency>
-		<!-- end of foundation service -->
+		<!-- end of guice -->
 		<!-- log -->
 		<dependency>
 			<groupId>org.slf4j</groupId>
@@ -61,19 +61,5 @@
 			<scope>test</scope>
 		</dependency>
 		<!-- end of test -->
-		<!-- dal-jdbc -->
-		<dependency>
-			<groupId>org.unidal.framework</groupId>
-			<artifactId>dal-jdbc</artifactId>
-			<version>2.4.0</version>
-            <optional>true</optional>
-			<exclusions>
-				<exclusion>
-					<groupId>com.dianping.cat</groupId>
-					<artifactId>cat-client</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<!-- end of dal-jdbc -->
 	</dependencies>
 </project>

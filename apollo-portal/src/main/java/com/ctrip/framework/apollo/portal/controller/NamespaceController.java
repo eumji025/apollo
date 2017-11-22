@@ -3,21 +3,17 @@ package com.ctrip.framework.apollo.portal.controller;
 import com.google.common.collect.Sets;
 
 import com.ctrip.framework.apollo.common.dto.NamespaceDTO;
-import com.ctrip.framework.apollo.common.entity.App;
 import com.ctrip.framework.apollo.common.entity.AppNamespace;
 import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.common.utils.InputValidator;
 import com.ctrip.framework.apollo.common.utils.RequestPrecondition;
-import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.core.enums.Env;
-import com.ctrip.framework.apollo.core.utils.StringUtils;
 import com.ctrip.framework.apollo.portal.component.config.PortalConfig;
 import com.ctrip.framework.apollo.portal.constant.RoleType;
-import com.ctrip.framework.apollo.portal.entity.model.NamespaceCreationModel;
 import com.ctrip.framework.apollo.portal.entity.bo.NamespaceBO;
+import com.ctrip.framework.apollo.portal.entity.model.NamespaceCreationModel;
 import com.ctrip.framework.apollo.portal.listener.AppNamespaceCreationEvent;
 import com.ctrip.framework.apollo.portal.service.AppNamespaceService;
-import com.ctrip.framework.apollo.portal.service.AppService;
 import com.ctrip.framework.apollo.portal.service.NamespaceService;
 import com.ctrip.framework.apollo.portal.service.RoleInitializationService;
 import com.ctrip.framework.apollo.portal.service.RolePermissionService;
@@ -49,8 +45,6 @@ public class NamespaceController {
 
   private static final Logger logger = LoggerFactory.getLogger(NamespaceController.class);
 
-  @Autowired
-  private AppService appService;
   @Autowired
   private ApplicationEventPublisher publisher;
   @Autowired
@@ -102,18 +96,18 @@ public class NamespaceController {
                                               @RequestBody List<NamespaceCreationModel> models) {
 
     checkModel(!CollectionUtils.isEmpty(models));
-    roleInitializationService.initNamespaceRoles(appId, models.get(0).getNamespace().getNamespaceName());
 
-    String namespaceName = null;
+    String namespaceName = models.get(0).getNamespace().getNamespaceName();
+    String operator = userInfoHolder.getUser().getUserId();
+
+    roleInitializationService.initNamespaceRoles(appId, namespaceName, operator);
+
     for (NamespaceCreationModel model : models) {
       NamespaceDTO namespace = model.getNamespace();
-      namespaceName = namespace.getNamespaceName();
-      RequestPrecondition
-              .checkArgumentsNotEmpty(model.getEnv(), namespace.getAppId(), namespace.getClusterName(),
-                      namespace.getNamespaceName());
+      RequestPrecondition.checkArgumentsNotEmpty(model.getEnv(), namespace.getAppId(),
+                                                 namespace.getClusterName(), namespace.getNamespaceName());
 
       try {
-        // TODO: 16/6/17 某些环境创建失败,统一处理这种场景
         namespaceService.createNamespace(Env.valueOf(model.getEnv()), namespace);
       } catch (Exception e) {
         logger.error("create namespace fail.", e);
@@ -149,21 +143,6 @@ public class NamespaceController {
                       + InputValidator.INVALID_NAMESPACE_NAMESPACE_MESSAGE));
     }
 
-    //add app org id as prefix
-    App app = appService.load(appId);
-    StringBuilder appNamespaceName = new StringBuilder();
-    //add prefix postfix
-    appNamespaceName
-            .append(appNamespace.isPublic() ? app.getOrgId() + "." : "")
-            .append(appNamespace.getName())
-            .append(appNamespace.formatAsEnum() == ConfigFileFormat.Properties ? "" : "." + appNamespace.getFormat());
-    appNamespace.setName(appNamespaceName.toString());
-
-    String operator = userInfoHolder.getUser().getUserId();
-    if (StringUtils.isEmpty(appNamespace.getDataChangeCreatedBy())) {
-      appNamespace.setDataChangeCreatedBy(operator);
-    }
-    appNamespace.setDataChangeLastModifiedBy(operator);
     AppNamespace createdAppNamespace = appNamespaceService.createAppNamespaceInLocal(appNamespace);
 
     if (portalConfig.canAppAdminCreatePrivateNamespace() || createdAppNamespace.isPublic()) {

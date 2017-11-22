@@ -1,6 +1,7 @@
 package com.ctrip.framework.apollo.portal.spi.configuration;
 
 
+import com.ctrip.framework.apollo.common.condition.ConditionalOnMissingProfile;
 import com.ctrip.framework.apollo.portal.spi.EmailService;
 import com.ctrip.framework.apollo.portal.spi.ctrip.CtripEmailService;
 import com.ctrip.framework.apollo.portal.spi.ctrip.CtripEmailRequestBuilder;
@@ -36,7 +37,7 @@ public class EmailConfiguration {
    * spring.profiles.active != ctrip
    */
   @Configuration
-  @Profile({"!ctrip"})
+  @ConditionalOnMissingProfile({"ctrip"})
   public static class DefaultEmailConfiguration {
     @Bean
     @ConditionalOnMissingBean(EmailService.class)

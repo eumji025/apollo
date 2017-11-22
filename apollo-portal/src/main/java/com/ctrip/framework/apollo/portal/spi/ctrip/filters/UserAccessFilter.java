@@ -1,6 +1,6 @@
 package com.ctrip.framework.apollo.portal.spi.ctrip.filters;
 
-import com.ctrip.framework.apollo.portal.constant.CatEventType;
+import com.ctrip.framework.apollo.portal.constant.TracerEventType;
 import com.ctrip.framework.apollo.portal.entity.bo.UserInfo;
 import com.ctrip.framework.apollo.portal.spi.UserInfoHolder;
 import com.ctrip.framework.apollo.tracer.Tracer;
@@ -37,7 +37,7 @@ public class UserAccessFilter implements Filter {
       if (!isOpenAPIRequest(requestUri) && !isStaticResource(requestUri)) {
         UserInfo userInfo = userInfoHolder.getUser();
         if (userInfo != null) {
-          Tracer.logEvent(CatEventType.USER_ACCESS, userInfo.getUserId());
+          Tracer.logEvent(TracerEventType.USER_ACCESS, userInfo.getUserId());
         }
       }
     } catch (Throwable e) {

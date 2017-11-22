@@ -48,7 +48,7 @@ public class AppController {
     return dto;
   }
 
-  @RequestMapping(value = "/apps/{appId}", method = RequestMethod.DELETE)
+  @RequestMapping(value = "/apps/{appId:.+}", method = RequestMethod.DELETE)
   public void delete(@PathVariable("appId") String appId, @RequestParam String operator) {
     App entity = appService.findOne(appId);
     if (entity == null) {
@@ -57,7 +57,7 @@ public class AppController {
     appService.delete(entity.getId(), operator);
   }
 
-  @RequestMapping(value = "/apps/{appId}", method = RequestMethod.PUT)
+  @RequestMapping(value = "/apps/{appId:.+}", method = RequestMethod.PUT)
   public void update(@PathVariable String appId, @RequestBody App app) {
     if (!Objects.equals(appId, app.getAppId())) {
       throw new BadRequestException("The App Id of path variable and request body is different");
@@ -78,7 +78,7 @@ public class AppController {
     return BeanUtils.batchTransform(AppDTO.class, app);
   }
 
-  @RequestMapping(value = "/apps/{appId}", method = RequestMethod.GET)
+  @RequestMapping(value = "/apps/{appId:.+}", method = RequestMethod.GET)
   public AppDTO get(@PathVariable("appId") String appId) {
     App app = appService.findOne(appId);
     if (app == null) {

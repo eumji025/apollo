@@ -1,20 +1,26 @@
 package com.ctrip.framework.apollo.internals;
 
-import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.when;
 
+import com.ctrip.framework.apollo.ConfigFile;
+import com.ctrip.framework.apollo.ConfigFileChangeListener;
+import com.ctrip.framework.apollo.enums.PropertyChangeType;
+import com.ctrip.framework.apollo.model.ConfigFileChangeEvent;
+import com.google.common.util.concurrent.SettableFuture;
+import java.util.Properties;
+
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Properties;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.when;
+import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 
 /**
  * @author Jason Song(song_s@ctrip.com)
@@ -84,10 +90,27 @@ public class PropertiesConfigFileTest {
     Properties anotherProperties = new Properties();
     anotherProperties.setProperty(someKey, anotherValue);
 
+    final SettableFuture<ConfigFileChangeEvent> configFileChangeFuture = SettableFuture.create();
+    ConfigFileChangeListener someListener = new ConfigFileChangeListener() {
+      @Override
+      public void onChange(ConfigFileChangeEvent changeEvent) {
+        configFileChangeFuture.set(changeEvent);
+      }
+    };
+
+    configFile.addChangeListener(someListener);
+
     configFile.onRepositoryChange(someNamespace, anotherProperties);
+
+    ConfigFileChangeEvent changeEvent = configFileChangeFuture.get(500, TimeUnit.MILLISECONDS);
 
     assertFalse(configFile.getContent().contains(String.format("%s=%s", someKey, someValue)));
     assertTrue(configFile.getContent().contains(String.format("%s=%s", someKey, anotherValue)));
+
+    assertEquals(someNamespace, changeEvent.getNamespace());
+    assertTrue(changeEvent.getOldValue().contains(String.format("%s=%s", someKey, someValue)));
+    assertTrue(changeEvent.getNewValue().contains(String.format("%s=%s", someKey, anotherValue)));
+    assertEquals(PropertyChangeType.MODIFIED, changeEvent.getChangeType());
   }
 
   @Test
