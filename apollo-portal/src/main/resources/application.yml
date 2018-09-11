@@ -3,6 +3,8 @@ spring:
     name: apollo-portal
   profiles:
     active: ${apollo_profile}
+  resources:
+    cache-period: 3600
 
 server:
   port: 8080

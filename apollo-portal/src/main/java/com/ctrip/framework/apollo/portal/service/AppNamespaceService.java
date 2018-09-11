@@ -3,7 +3,6 @@ package com.ctrip.framework.apollo.portal.service;
 import com.ctrip.framework.apollo.common.entity.App;
 import com.ctrip.framework.apollo.common.entity.AppNamespace;
 import com.ctrip.framework.apollo.common.exception.BadRequestException;
-import com.ctrip.framework.apollo.common.exception.ServiceException;
 import com.ctrip.framework.apollo.core.ConfigConsts;
 import com.ctrip.framework.apollo.core.enums.ConfigFileFormat;
 import com.ctrip.framework.apollo.core.utils.StringUtils;
@@ -28,6 +27,8 @@ public class AppNamespaceService {
   private RoleInitializationService roleInitializationService;
   @Autowired
   private AppService appService;
+  @Autowired
+  private RolePermissionService rolePermissionService;
 
   /**
    * 公共的app ns,能被其它项目关联到的app ns
@@ -103,20 +104,49 @@ public class AppNamespaceService {
     appNamespace.setDataChangeLastModifiedBy(operator);
 
     // unique check
-    if (appNamespace.isPublic() && findPublicAppNamespace(appNamespace.getName()) != null) {
-      throw new BadRequestException(appNamespace.getName() + "已存在");
+    if (appNamespace.isPublic()) {
+      AppNamespace publicAppNamespace = findPublicAppNamespace(appNamespace.getName());
+      if (publicAppNamespace != null) {
+        throw new BadRequestException("Public AppNamespace " + appNamespace.getName() + " already exists in appId: " + publicAppNamespace.getAppId() + "!");
+      }
     }
 
     if (!appNamespace.isPublic() &&
         appNamespaceRepository.findByAppIdAndName(appNamespace.getAppId(), appNamespace.getName()) != null) {
-      throw new BadRequestException(appNamespace.getName() + "已存在");
+      throw new BadRequestException("Private AppNamespace " + appNamespace.getName() + " already exists!");
     }
 
     AppNamespace createdAppNamespace = appNamespaceRepository.save(appNamespace);
 
     roleInitializationService.initNamespaceRoles(appNamespace.getAppId(), appNamespace.getName(), operator);
+    roleInitializationService.initNamespaceEnvRoles(appNamespace.getAppId(), appNamespace.getName(), operator);
 
     return createdAppNamespace;
   }
 
+  @Transactional
+  public AppNamespace deleteAppNamespace(String appId, String namespaceName) {
+    AppNamespace appNamespace = appNamespaceRepository.findByAppIdAndName(appId, namespaceName);
+    if (appNamespace == null) {
+      throw new BadRequestException(
+          String.format("AppNamespace not exists. AppId = %s, NamespaceName = %s", appId, namespaceName));
+    }
+
+    String operator = userInfoHolder.getUser().getUserId();
+
+    // this operator is passed to com.ctrip.framework.apollo.portal.listener.DeletionListener.onAppNamespaceDeletionEvent
+    appNamespace.setDataChangeLastModifiedBy(operator);
+
+    // delete app namespace in portal db
+    appNamespaceRepository.delete(appId, namespaceName, operator);
+
+    // delete Permission and Role related data
+    rolePermissionService.deleteRolePermissionsByAppIdAndNamespace(appId, namespaceName, operator);
+
+    return appNamespace;
+  }
+
+  public void batchDeleteByAppId(String appId, String operator) {
+    appNamespaceRepository.batchDeleteByAppId(appId, operator);
+  }
 }

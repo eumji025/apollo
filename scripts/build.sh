@@ -1,6 +1,7 @@
 #!/bin/sh
 
 # apollo config db info
+<<<<<<< HEAD
 apollo_config_db_url=jdbc:mysql://localhost:3306/ApolloConfigDB?characterEncoding=utf8
 apollo_config_db_username=root
 apollo_config_db_password=root
@@ -9,12 +10,22 @@ apollo_config_db_password=root
 apollo_portal_db_url=jdbc:mysql://localhost:3306/ApolloPortalDB?characterEncoding=utf8
 apollo_portal_db_username=root
 apollo_portal_db_password=root
+=======
+apollo_config_db_url=jdbc:mysql://fill-in-the-correct-server:3306/ApolloConfigDB?characterEncoding=utf8
+apollo_config_db_username=FillInCorrectUser
+apollo_config_db_password=FillInCorrectPassword
+
+# apollo portal db info
+apollo_portal_db_url=jdbc:mysql://fill-in-the-correct-server:3306/ApolloPortalDB?characterEncoding=utf8
+apollo_portal_db_username=FillInCorrectUser
+apollo_portal_db_password=FillInCorrectPassword
+>>>>>>> 976b69d019e6c8be409ed93c7a1dc861bbc82643
 
 # meta server url, different environments should have different meta server addresses
-dev_meta=http://localhost:8080
-fat_meta=http://someIp:8080
-uat_meta=http://anotherIp:8080
-pro_meta=http://yetAnotherIp:8080
+dev_meta=http://fill-in-dev-meta-server:8080
+fat_meta=http://fill-in-fat-meta-server:8080
+uat_meta=http://fill-in-uat-meta-server:8080
+pro_meta=http://fill-in-pro-meta-server:8080
 
 META_SERVERS_OPTS="-Ddev_meta=$dev_meta -Dfat_meta=$fat_meta -Duat_meta=$uat_meta -Dpro_meta=$pro_meta"
 
@@ -36,10 +47,3 @@ echo "==== starting to build portal ===="
 mvn clean package -DskipTests -pl apollo-portal -am -Dapollo_profile=github,auth -Dspring_datasource_url=$apollo_portal_db_url -Dspring_datasource_username=$apollo_portal_db_username -Dspring_datasource_password=$apollo_portal_db_password $META_SERVERS_OPTS
 
 echo "==== building portal finished ===="
-
-echo "==== starting to build client ===="
-
-mvn clean install -DskipTests -pl apollo-client -am $META_SERVERS_OPTS
-
-echo "==== building client finished ===="
-
