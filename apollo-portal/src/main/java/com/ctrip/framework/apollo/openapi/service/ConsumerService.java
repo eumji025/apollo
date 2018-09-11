@@ -112,17 +112,21 @@ public class ConsumerService {
     return consumerRepository.findOne(consumerId);
   }
 
-  @Transactional
   public List<ConsumerRole> assignNamespaceRoleToConsumer(String token, String appId, String namespaceName) {
+    return assignNamespaceRoleToConsumer(token, appId, namespaceName, null);
+  }
+
+  @Transactional
+  public List<ConsumerRole> assignNamespaceRoleToConsumer(String token, String appId, String namespaceName, String env) {
     Long consumerId = getConsumerIdByToken(token);
     if (consumerId == null) {
       throw new BadRequestException("Token is Illegal");
     }
 
     Role namespaceModifyRole =
-        rolePermissionService.findRoleByRoleName(RoleUtils.buildModifyNamespaceRoleName(appId, namespaceName));
+        rolePermissionService.findRoleByRoleName(RoleUtils.buildModifyNamespaceRoleName(appId, namespaceName, env));
     Role namespaceReleaseRole =
-        rolePermissionService.findRoleByRoleName(RoleUtils.buildReleaseNamespaceRoleName(appId, namespaceName));
+        rolePermissionService.findRoleByRoleName(RoleUtils.buildReleaseNamespaceRoleName(appId, namespaceName, env));
 
     if (namespaceModifyRole == null || namespaceReleaseRole == null) {
       throw new BadRequestException("Namespace's role does not exist. Please check whether namespace has created.");
