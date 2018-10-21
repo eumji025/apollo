@@ -44,6 +44,7 @@ public class ServerConfigController {
     if (Objects.isNull(storedConfig)) {//create
       serverConfig.setDataChangeCreatedBy(modifiedBy);
       serverConfig.setDataChangeLastModifiedBy(modifiedBy);
+      serverConfig.setId(0L);//为空，设置ID 为0，jpa执行新增操作
       return serverConfigRepository.save(serverConfig);
     } else {//update
       BeanUtils.copyEntityProperties(serverConfig, storedConfig);

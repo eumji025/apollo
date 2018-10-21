@@ -60,6 +60,10 @@ public class AppService {
     return appRepository.findByAppIdIn(appIds);
   }
 
+  public List<App> findByAppIds(Set<String> appIds, Pageable pageable) {
+    return appRepository.findByAppIdIn(appIds, pageable);
+  }
+
   public List<App> findByOwnerName(String ownerName, Pageable page) {
     return appRepository.findByOwnerName(ownerName, page);
   }

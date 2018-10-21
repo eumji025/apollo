@@ -77,7 +77,7 @@ public class FavoriteService {
 
 
   public void deleteFavorite(long favoriteId) {
-    Favorite favorite = favoriteRepository.findOne(favoriteId);
+    Favorite favorite = favoriteRepository.findById(favoriteId).orElse(null);
 
     checkUserOperatePermission(favorite);
 
@@ -85,7 +85,7 @@ public class FavoriteService {
   }
 
   public void adjustFavoriteToFirst(long favoriteId) {
-    Favorite favorite = favoriteRepository.findOne(favoriteId);
+    Favorite favorite = favoriteRepository.findById(favoriteId).orElse(null);
 
     checkUserOperatePermission(favorite);
 

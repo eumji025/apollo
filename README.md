@@ -24,10 +24,6 @@ Java客户端不依赖任何框架，能够运行于所有Java运行时环境，
 
 本地快速部署请参见[Quick Start](https://github.com/ctripcorp/apollo/wiki/Quick-Start)
 
-公益演示环境（Demo）:
-- [140.143.100.23:8070](http://140.143.100.23:8070/)
-- 账号/密码:apollo/admin
-
 # Screenshots
 ![配置界面](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/apollo-home-screenshot.png)
 
@@ -106,7 +102,18 @@ Java客户端不依赖任何框架，能够运行于所有Java运行时环境，
   * [开源配置中心Apollo的设计与实现](http://www.infoq.com/cn/articles/open-source-configuration-center-apollo)
 
 # Support
-![tech-support-qq](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/tech-support-qq.png)
+<table>
+  <thead>
+    <th>Apollo配置中心技术支持②群<br />群号：904287263</th>
+    <th>Apollo配置中心技术支持①群<br />群号：375526581（已满）</th>
+  </thead>
+  <tbody>
+    <tr>
+      <td><img src="https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/tech-support-qq-2.png" alt="tech-support-qq-2"></td>
+      <td><img src="https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/tech-support-qq-1.png" alt="tech-support-qq-1"></td>
+    </tr>
+  </tbody>
+</table>
 
 # Contribution
   * Source Code: https://github.com/ctripcorp/apollo
@@ -211,3 +218,14 @@ The project is licensed under the [Apache 2 license](https://github.com/ctripcor
 ![财学堂](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/caixuetang.png) 
 ![4399](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/4399.png) 
 ![汽车之家](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/autohome.png) 
+![面包财经](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/mbcaijing.png) 
+![虎扑](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/hoopchina.png) 
+![搜狐汽车](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/sohu-auto.png) 
+![量富征信](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/liangfuzhengxin.png) 
+![卖好车](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/maihaoche.png) 
+![中移物联网](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/zyiot.jpg) 
+![易车网](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/biauto.png) 
+![一药网](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/maiyaole.png) 
+![小影](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/xiaoying.png) 
+![彩贝壳](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/caibeike.png) 
+![YEELIGHT](https://raw.githubusercontent.com/ctripcorp/apollo/master/doc/images/known-users/yeelight.png) 

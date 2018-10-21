@@ -22,13 +22,12 @@ import java.util.Collections;
 import java.util.EventListener;
 import java.util.Map;
 import javax.servlet.Filter;
-import org.apache.tomcat.jdbc.pool.DataSource;
+import javax.sql.DataSource;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.AutoConfigureAfter;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
-import org.springframework.boot.context.embedded.FilterRegistrationBean;
-import org.springframework.boot.context.embedded.ServletListenerRegistrationBean;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
+import org.springframework.boot.web.servlet.ServletListenerRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -38,15 +37,16 @@ import org.springframework.ldap.core.ContextSource;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
-import org.springframework.security.authentication.encoding.LdapShaPasswordEncoder;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.LdapShaPasswordEncoder;
 import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint;
+import org.springframework.security.web.authentication.logout.SimpleUrlLogoutSuccessHandler;
 
 
 @Configuration
@@ -271,8 +271,10 @@ public class AuthConfiguration {
           .antMatchers("/openapi/**", "/vendor/**", "/styles/**", "/scripts/**", "/views/**", "/img/**").permitAll()
           .antMatchers("/**").hasAnyRole(USER_ROLE);
       http.formLogin().loginPage("/signin").permitAll().failureUrl("/signin?#/error").and().httpBasic();
+      SimpleUrlLogoutSuccessHandler urlLogoutHandler = new SimpleUrlLogoutSuccessHandler();
+      urlLogoutHandler.setDefaultTargetUrl("/signin?#/logout");
       http.logout().logoutUrl("/user/logout").invalidateHttpSession(true).clearAuthentication(true)
-          .logoutSuccessUrl("/signin?#/logout");
+          .logoutSuccessHandler(urlLogoutHandler);
       http.exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/signin"));
     }
 
@@ -353,15 +355,14 @@ public class AuthConfiguration {
       http.csrf().disable();
       http.headers().frameOptions().sameOrigin();
       http.authorizeRequests()
-          .antMatchers("/openapi/**", "/vendor/**", "/styles/**", "/scripts/**", "/views/**",
-              "/img/**").permitAll()
+          .antMatchers("/openapi/**", "/vendor/**", "/styles/**", "/scripts/**", "/views/**", "/img/**").permitAll()
           .antMatchers("/**").authenticated();
-      http.formLogin().loginPage("/signin").permitAll().failureUrl("/signin?#/error").and()
-          .httpBasic();
+      http.formLogin().loginPage("/signin").permitAll().failureUrl("/signin?#/error").and().httpBasic();
+      SimpleUrlLogoutSuccessHandler urlLogoutHandler = new SimpleUrlLogoutSuccessHandler();
+      urlLogoutHandler.setDefaultTargetUrl("/signin?#/logout");
       http.logout().logoutUrl("/user/logout").invalidateHttpSession(true).clearAuthentication(true)
-          .logoutSuccessUrl("/signin?#/logout");
-      http.exceptionHandling()
-          .authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/signin"));
+          .logoutSuccessHandler(urlLogoutHandler);
+      http.exceptionHandling().authenticationEntryPoint(new LoginUrlAuthenticationEntryPoint("/signin"));
     }
 
     @Override

@@ -2,6 +2,7 @@ package com.ctrip.framework.apollo.portal.controller;
 
 import com.ctrip.framework.apollo.common.dto.AppNamespaceDTO;
 import com.ctrip.framework.apollo.common.utils.BeanUtils;
+import com.ctrip.framework.apollo.portal.component.PermissionValidator;
 import com.ctrip.framework.apollo.portal.listener.AppNamespaceDeletionEvent;
 import com.google.common.collect.Sets;
 
@@ -62,6 +63,8 @@ public class NamespaceController {
   private RolePermissionService rolePermissionService;
   @Autowired
   private PortalConfig portalConfig;
+  @Autowired
+  private PermissionValidator permissionValidator;
 
 
   @RequestMapping(value = "/appnamespaces/public", method = RequestMethod.GET)
@@ -73,14 +76,28 @@ public class NamespaceController {
   public List<NamespaceBO> findNamespaces(@PathVariable String appId, @PathVariable String env,
                                           @PathVariable String clusterName) {
 
-    return namespaceService.findNamespaceBOs(appId, Env.valueOf(env), clusterName);
+    List<NamespaceBO> namespaceBOs = namespaceService.findNamespaceBOs(appId, Env.valueOf(env), clusterName);
+
+    for (NamespaceBO namespaceBO : namespaceBOs) {
+      if (permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceBO.getBaseInfo().getNamespaceName())) {
+        namespaceBO.hideItems();
+      }
+    }
+
+    return namespaceBOs;
   }
 
   @RequestMapping(value = "/apps/{appId}/envs/{env}/clusters/{clusterName}/namespaces/{namespaceName:.+}", method = RequestMethod.GET)
   public NamespaceBO findNamespace(@PathVariable String appId, @PathVariable String env,
                                    @PathVariable String clusterName, @PathVariable String namespaceName) {
 
-    return namespaceService.loadNamespaceBO(appId, Env.valueOf(env), clusterName, namespaceName);
+    NamespaceBO namespaceBO = namespaceService.loadNamespaceBO(appId, Env.valueOf(env), clusterName, namespaceName);
+
+    if (namespaceBO != null && permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceName)) {
+      namespaceBO.hideItems();
+    }
+
+    return namespaceBO;
   }
 
   @RequestMapping(value = "/envs/{env}/apps/{appId}/clusters/{clusterName}/namespaces/{namespaceName}/associated-public-namespace",
@@ -161,16 +178,18 @@ public class NamespaceController {
 
   @PreAuthorize(value = "@permissionValidator.hasCreateAppNamespacePermission(#appId, #appNamespace)")
   @RequestMapping(value = "/apps/{appId}/appnamespaces", method = RequestMethod.POST)
-  public AppNamespace createAppNamespace(@PathVariable String appId, @RequestBody AppNamespace appNamespace) {
+  public AppNamespace createAppNamespace(@PathVariable String appId,
+      @RequestParam(defaultValue = "true") boolean appendNamespacePrefix,
+      @RequestBody AppNamespace appNamespace) {
 
     RequestPrecondition.checkArgumentsNotEmpty(appNamespace.getAppId(), appNamespace.getName());
     if (!InputValidator.isValidAppNamespace(appNamespace.getName())) {
       throw new BadRequestException(String.format("Namespace格式错误: %s",
-              InputValidator.INVALID_CLUSTER_NAMESPACE_MESSAGE + " & "
-                      + InputValidator.INVALID_NAMESPACE_NAMESPACE_MESSAGE));
+          InputValidator.INVALID_CLUSTER_NAMESPACE_MESSAGE + " & "
+              + InputValidator.INVALID_NAMESPACE_NAMESPACE_MESSAGE));
     }
 
-    AppNamespace createdAppNamespace = appNamespaceService.createAppNamespaceInLocal(appNamespace);
+    AppNamespace createdAppNamespace = appNamespaceService.createAppNamespaceInLocal(appNamespace, appendNamespacePrefix);
 
     if (portalConfig.canAppAdminCreatePrivateNamespace() || createdAppNamespace.isPublic()) {
       assignNamespaceRoleToOperator(appId, appNamespace.getName());

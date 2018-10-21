@@ -43,7 +43,13 @@ public class NamespaceBranchController {
                                 @PathVariable String env,
                                 @PathVariable String clusterName,
                                 @PathVariable String namespaceName) {
-    return namespaceBranchService.findBranch(appId, Env.valueOf(env), clusterName, namespaceName);
+    NamespaceBO namespaceBO = namespaceBranchService.findBranch(appId, Env.valueOf(env), clusterName, namespaceName);
+
+    if (namespaceBO != null && permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceName)) {
+      namespaceBO.hideItems();
+    }
+
+    return namespaceBO;
   }
 
   @PreAuthorize(value = "@permissionValidator.hasModifyNamespacePermission(#appId, #namespaceName, #env)")

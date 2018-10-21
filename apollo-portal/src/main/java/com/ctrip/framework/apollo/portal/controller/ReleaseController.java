@@ -13,6 +13,7 @@ import com.ctrip.framework.apollo.portal.entity.bo.ReleaseBO;
 import com.ctrip.framework.apollo.portal.listener.ConfigPublishEvent;
 import com.ctrip.framework.apollo.portal.service.ReleaseService;
 
+import java.util.Collections;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.AccessDeniedException;
@@ -113,6 +114,9 @@ public class ReleaseController {
                                          @PathVariable String namespaceName,
                                          @RequestParam(defaultValue = "0") int page,
                                          @RequestParam(defaultValue = "5") int size) {
+    if (permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceName)) {
+      return Collections.emptyList();
+    }
 
     RequestPrecondition.checkNumberPositive(size);
     RequestPrecondition.checkNumberNotNegative(page);
@@ -127,6 +131,10 @@ public class ReleaseController {
                                              @PathVariable String namespaceName,
                                              @RequestParam(defaultValue = "0") int page,
                                              @RequestParam(defaultValue = "5") int size) {
+
+    if (permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceName)) {
+      return Collections.emptyList();
+    }
 
     RequestPrecondition.checkNumberPositive(size);
     RequestPrecondition.checkNumberNotNegative(page);

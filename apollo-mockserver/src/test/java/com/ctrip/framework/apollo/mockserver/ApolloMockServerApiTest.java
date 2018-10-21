@@ -4,6 +4,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 import com.ctrip.framework.apollo.Config;
+import com.ctrip.framework.apollo.ConfigChangeListener;
 import com.ctrip.framework.apollo.ConfigService;
 import com.ctrip.framework.apollo.model.ConfigChangeEvent;
 import com.google.common.util.concurrent.SettableFuture;
@@ -13,7 +14,7 @@ import org.junit.Test;
 
 public class ApolloMockServerApiTest {
 
-  private static final String otherNamespace = "otherNamespace";
+  private static final String anotherNamespace = "anotherNamespace";
 
   @ClassRule
   public static EmbeddedApollo embeddedApollo = new EmbeddedApollo();
@@ -30,16 +31,21 @@ public class ApolloMockServerApiTest {
   public void testUpdateProperties() throws Exception {
     String someNewValue = "someNewValue";
 
-    Config otherConfig = ConfigService.getConfig(otherNamespace);
+    Config otherConfig = ConfigService.getConfig(anotherNamespace);
 
-    SettableFuture<ConfigChangeEvent> future = SettableFuture.create();
+    final SettableFuture<ConfigChangeEvent> future = SettableFuture.create();
 
-    otherConfig.addChangeListener(future::set);
+    otherConfig.addChangeListener(new ConfigChangeListener() {
+      @Override
+      public void onChange(ConfigChangeEvent changeEvent) {
+        future.set(changeEvent);
+      }
+    });
 
     assertEquals("otherValue1", otherConfig.getProperty("key1", null));
     assertEquals("otherValue2", otherConfig.getProperty("key2", null));
 
-    embeddedApollo.addOrModifyProperty(otherNamespace, "key1", someNewValue);
+    embeddedApollo.addOrModifyProperty(anotherNamespace, "key1", someNewValue);
 
     ConfigChangeEvent changeEvent = future.get(5, TimeUnit.SECONDS);
 

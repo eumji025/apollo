@@ -1,5 +1,6 @@
 package com.ctrip.framework.apollo.portal.controller;
 
+import com.ctrip.framework.apollo.common.dto.ItemChangeSets;
 import com.ctrip.framework.apollo.common.dto.ItemDTO;
 import com.ctrip.framework.apollo.common.exception.BadRequestException;
 import com.ctrip.framework.apollo.core.enums.Env;
@@ -107,6 +108,10 @@ public class ItemController {
                                  @PathVariable String clusterName, @PathVariable String namespaceName,
                                  @RequestParam(defaultValue = "lineNum") String orderBy) {
 
+    if (permissionValidator.shouldHideConfigToCurrentUser(appId, env, namespaceName)) {
+      return Collections.emptyList();
+    }
+
     List<ItemDTO> items = configService.findItems(appId, Env.valueOf(env), clusterName, namespaceName);
     if ("lastModifiedTime".equals(orderBy)) {
       Collections.sort(items, (o1, o2) -> {
@@ -136,7 +141,22 @@ public class ItemController {
   public List<ItemDiffs> diff(@RequestBody NamespaceSyncModel model) {
     checkModel(Objects.nonNull(model) && !model.isInvalid());
 
-    return configService.compare(model.getSyncToNamespaces(), model.getSyncItems());
+    List<ItemDiffs> itemDiffs = configService.compare(model.getSyncToNamespaces(), model.getSyncItems());
+
+    for (ItemDiffs diff : itemDiffs) {
+      NamespaceIdentifier namespace = diff.getNamespace();
+      if (namespace == null) {
+        continue;
+      }
+
+      if (permissionValidator
+          .shouldHideConfigToCurrentUser(namespace.getAppId(), namespace.getEnv().name(), namespace.getNamespaceName())) {
+        diff.setDiffs(new ItemChangeSets());
+        diff.setExtInfo("您不是该项目的管理员，也没有该Namespace在 " + namespace.getEnv() +  " 环境的编辑或发布权限");
+      }
+    }
+
+    return itemDiffs;
   }
 
   @RequestMapping(value = "/apps/{appId}/namespaces/{namespaceName}/items", method = RequestMethod.PUT, consumes = {

@@ -9,6 +9,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.ctrip.framework.apollo.enums.ConfigSourceType;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import java.io.File;
@@ -50,6 +51,7 @@ public class DefaultConfigTest {
   private String someNamespace;
   private ConfigRepository configRepository;
   private Properties someProperties;
+  private ConfigSourceType someSourceType;
 
   @Before
   public void setUp() throws Exception {
@@ -99,6 +101,8 @@ public class DefaultConfigTest {
     someProperties.setProperty(someKey, someLocalFileValue);
     someProperties.setProperty(anotherKey, someLocalFileValue);
     when(configRepository.getConfig()).thenReturn(someProperties);
+    someSourceType = ConfigSourceType.LOCAL;
+    when(configRepository.getSourceType()).thenReturn(someSourceType);
 
     //set up resource file
     File resourceFile = new File(someResourceDir, someNamespace + ".properties");
@@ -122,6 +126,7 @@ public class DefaultConfigTest {
     assertEquals(someLocalFileValue, anotherKeyValue);
     assertEquals(someResourceValue, lastKeyValue);
 
+    assertEquals(someSourceType, defaultConfig.getSourceType());
   }
 
   @Test
@@ -599,6 +604,8 @@ public class DefaultConfigTest {
         .of(someKey, someLocalFileValue, anotherKey, someLocalFileValue, keyToBeDeleted,
             keyToBeDeletedValue, yetAnotherKey, yetAnotherValue));
     when(configRepository.getConfig()).thenReturn(someProperties);
+    someSourceType = ConfigSourceType.LOCAL;
+    when(configRepository.getSourceType()).thenReturn(someSourceType);
 
     //set up resource file
     File resourceFile = new File(someResourceDir, someNamespace + ".properties");
@@ -606,6 +613,8 @@ public class DefaultConfigTest {
 
     DefaultConfig defaultConfig =
         new DefaultConfig(someNamespace, configRepository);
+
+    assertEquals(someSourceType, defaultConfig.getSourceType());
 
     final SettableFuture<ConfigChangeEvent> configChangeFuture = SettableFuture.create();
     ConfigChangeListener someListener = new ConfigChangeListener() {
@@ -624,6 +633,9 @@ public class DefaultConfigTest {
     String newValue = "newValue";
     newProperties.putAll(ImmutableMap
         .of(someKey, someKeyNewValue, anotherKey, anotherKeyNewValue, newKey, newValue));
+
+    ConfigSourceType anotherSourceType = ConfigSourceType.REMOTE;
+    when(configRepository.getSourceType()).thenReturn(anotherSourceType);
 
     defaultConfig.onRepositoryChange(someNamespace, newProperties);
 
@@ -654,6 +666,8 @@ public class DefaultConfigTest {
     assertEquals(null, newKeyChange.getOldValue());
     assertEquals(newValue, newKeyChange.getNewValue());
     assertEquals(PropertyChangeType.ADDED, newKeyChange.getChangeType());
+
+    assertEquals(anotherSourceType, defaultConfig.getSourceType());
   }
 
   @Test
@@ -823,6 +837,34 @@ public class DefaultConfigTest {
         return Splitter.on(",").trimResults().omitEmptyStrings().splitToList(s);
       }
     }, Lists.<String>newArrayList()), Lists.newArrayList());
+  }
+
+  @Test
+  public void testLoadFromRepositoryFailedAndThenRecovered() {
+    String someKey = "someKey";
+    String someValue = "someValue";
+    String someDefaultValue = "someDefaultValue";
+    ConfigSourceType someSourceType = ConfigSourceType.REMOTE;
+
+    when(configRepository.getConfig()).thenThrow(mock(RuntimeException.class));
+
+    DefaultConfig defaultConfig =
+        new DefaultConfig(someNamespace, configRepository);
+
+    verify(configRepository, times(1)).addChangeListener(defaultConfig);
+
+    assertEquals(ConfigSourceType.NONE, defaultConfig.getSourceType());
+    assertEquals(someDefaultValue, defaultConfig.getProperty(someKey, someDefaultValue));
+
+    someProperties = new Properties();
+    someProperties.setProperty(someKey, someValue);
+
+    when(configRepository.getSourceType()).thenReturn(someSourceType);
+
+    defaultConfig.onRepositoryChange(someNamespace, someProperties);
+
+    assertEquals(someSourceType, defaultConfig.getSourceType());
+    assertEquals(someValue, defaultConfig.getProperty(someKey, someDefaultValue));
   }
 
   private void checkDatePropertyWithFormat(Config config, Date expected, String propertyName, String format, Date

@@ -109,7 +109,7 @@ public class ConsumerService {
   }
 
   public Consumer getConsumerByConsumerId(long consumerId) {
-    return consumerRepository.findOne(consumerId);
+    return consumerRepository.findById(consumerId).orElse(null);
   }
 
   public List<ConsumerRole> assignNamespaceRoleToConsumer(String token, String appId, String namespaceName) {
@@ -177,7 +177,7 @@ public class ConsumerService {
 
   @Transactional
   public void createConsumerAudits(Iterable<ConsumerAudit> consumerAudits) {
-    consumerAuditRepository.save(consumerAudits);
+    consumerAuditRepository.saveAll(consumerAudits);
   }
 
   @Transactional

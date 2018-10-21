@@ -186,7 +186,7 @@ public class AppNamespaceServiceWithCache implements InitializingBean {
     }
     List<List<Long>> partitionIds = Lists.partition(ids, 500);
     for (List<Long> toRebuild : partitionIds) {
-      Iterable<AppNamespace> appNamespaces = appNamespaceRepository.findAll(toRebuild);
+      Iterable<AppNamespace> appNamespaces = appNamespaceRepository.findAllById(toRebuild);
 
       if (appNamespaces == null) {
         continue;

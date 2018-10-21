@@ -2,6 +2,7 @@ package com.ctrip.framework.apollo.portal.controller;
 
 
 import com.ctrip.framework.apollo.core.ConfigConsts;
+import com.ctrip.framework.apollo.portal.entity.po.Role;
 import com.ctrip.framework.apollo.portal.service.RoleInitializationService;
 
 import com.ctrip.framework.apollo.common.entity.App;
@@ -71,7 +72,19 @@ public class AppController {
 
   @RequestMapping(value = "/by-owner", method = RequestMethod.GET)
   public List<App> findAppsByOwner(@RequestParam("owner") String owner, Pageable page) {
-    return appService.findByOwnerName(owner, page);
+    Set<String> appIds = Sets.newHashSet();
+
+    List<Role> userRoles = rolePermissionService.findUserRoles(owner);
+
+    for (Role role : userRoles) {
+      String appId = RoleUtils.extractAppIdFromMasterRoleName(role.getRoleName());
+
+      if (appId != null) {
+        appIds.add(appId);
+      }
+    }
+
+    return appService.findByAppIds(appIds, page);
   }
 
   @RequestMapping(value = "", method = RequestMethod.POST)
